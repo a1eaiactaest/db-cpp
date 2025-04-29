@@ -3,7 +3,7 @@ project(db_cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 
-inlcude(FetchContent)
+include(FetchContent)
 
 FetchContent_Declare(
         fmt
@@ -13,5 +13,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(fmt)
 
-add_executable(db_cpp main.cpp)
+add_executable(db_cpp main.cpp
+        structures.h)
 target_link_libraries(db_cpp fmt)
