@@ -7,6 +7,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <chrono>
 
 enum class DataType {
     INTEGER,
@@ -15,7 +16,24 @@ enum class DataType {
     STRING,
     DATE,
     DATETIME,
+    NULL_VALUE,
 };
+
+class value;
+
+using Date = std::chrono::year_month_day;
+using DateTime = std::chrono::system_clock::time_point;
+
+// type safety, corresponding types are self-explanatory
+using VariantType = std::variant<
+    int,
+    double,
+    bool,
+    std::string,
+    Date,
+    DateTime,
+    std::monostate // for NULL
+>;
 
 inline auto dataTypeToString(const DataType& t) -> std::string {
     const std::unordered_map<DataType, std::string> tmap = {

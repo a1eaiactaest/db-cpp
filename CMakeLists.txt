@@ -15,5 +15,8 @@ FetchContent_MakeAvailable(fmt)
 
 add_executable(db_cpp main.cpp
         structures.h
-        data_types.h)
+        data_types.h
+        value.cpp
+        value.h
+)
 target_link_libraries(db_cpp fmt)

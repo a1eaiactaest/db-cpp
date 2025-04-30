@@ -9,10 +9,18 @@
 #include <string>
 #include <unordered_map>
 
+#include "data_types.h"
+
 struct Column {
     std::string name;
-    std::string type; // make it an enum
+    DataType type;
     bool is_nullable;
+
+    Column(const std::string& name, const DataType type, const bool is_nullable)
+        : name(name),
+          type(type),
+          is_nullable(is_nullable) {
+    }
 };
 
 struct Row {
