@@ -24,5 +24,16 @@ DataType Value::getType() const {
 }
 
 std::string Value::toString() const {
-    // TODO:
+    if (isNull()) return "NULL";
+    // apply lambda to the whatever type is in value
+    return std::visit([](auto&& arg) -> std::string {
+        // deduct the type, and remove references
+        using T = std::decay_t<decltype(arg)>;
+
+        if constexpr (std::is_same_v<T, int>) {
+            return std::to_string(arg);
+        } else if constexpr (std::is_same_v<T, double>) {
+            std::ostringstream oss; // fixed, prec 6 output stream
+        }
+    }, value);
 }
