@@ -4,6 +4,8 @@
 
 #include "value.h"
 
+#include <iomanip>
+
 Value Value::Null() {
     return Value();
 }
@@ -33,7 +35,10 @@ std::string Value::toString() const {
         if constexpr (std::is_same_v<T, int>) {
             return std::to_string(arg);
         } else if constexpr (std::is_same_v<T, double>) {
-            std::ostringstream oss; // fixed, prec 6 output stream
+            std::ostringstream oss; // fixed (no scientific), prec 6 output stream
+            oss << std::fixed << std::setprecision(6) << arg;
+        } else if constexpr (std::is_same_v<T, bool>) {
+            return arg ? "true" : "false";
         }
     }, value);
 }
