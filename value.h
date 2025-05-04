@@ -39,6 +39,17 @@ public:
             throw std::runtime_error("invalid type access in Value");
         }
     }
+
+    // operators
+    bool operator==(const Value& o) const {
+        if (isNull() && o.isNull()) return true;
+        if (isNull() || o.isNull()) return false;
+        return value == o.value;
+    }
+
+    bool operator!=(const Value& o) const {
+        return !(*this == o);
+    }
 };
 
 #endif //VALUE_H
