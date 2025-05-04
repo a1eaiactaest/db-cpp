@@ -53,7 +53,7 @@ std::string Value::toString() const {
         } else if constexpr (std::is_same_v<T, DateTime>) {
             auto in_time_t = std::chrono::system_clock::to_time_t(arg);
             std::ostringstream oss;
-            oss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %H:%M:%S")
+            oss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %H:%M:%S");
             return oss.str();
         } else {
             throw std::runtime_error("unsupported type in Value::toString");
