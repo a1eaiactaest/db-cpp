@@ -22,7 +22,7 @@ enum class DataType {
 class value;
 
 using Date = std::chrono::year_month_day;
-using DateTime = std::chrono::system_clock::time_point;
+using DateTime = std::chrono::sys_time<std::chrono::milliseconds>;
 
 // type safety, corresponding types are self-explanatory
 using VariantType = std::variant<

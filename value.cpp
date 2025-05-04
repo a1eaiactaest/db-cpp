@@ -43,18 +43,9 @@ std::string Value::toString() const {
         } else if constexpr (std::is_same_v<T, std::string>) {
             return arg;
         } else if constexpr (std::is_same_v<T, Date>) {
-            std::ostringstream oss;
-            // yyyy-mm-dd format
-            oss << std::setfill('0')
-                << static_cast<int>(arg.year()) << "-"
-                << std::setw(2) << static_cast<unsigned>(arg.month()) << "-"
-                << std::setw(2) << static_cast<unsigned>(arg.day());
-            return oss.str();
+            return std::format("{:%Y-%m-%d}", arg);
         } else if constexpr (std::is_same_v<T, DateTime>) {
-            auto in_time_t = std::chrono::system_clock::to_time_t(arg);
-            std::ostringstream oss;
-            oss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %H:%M:%S");
-            return oss.str();
+            return std::format("{:%Y-%m-%d %H:%M:%S}", arg);
         } else {
             throw std::runtime_error("unsupported type in Value::toString");
         }
