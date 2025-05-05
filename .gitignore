@@ -46,3 +46,9 @@ CMakeUserPresets.json
 *.app
 
 cmake-build-debug/
+
+# IDEA
+*.iws
+workspace.xml
+tasks.xml
+
