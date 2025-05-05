@@ -12,15 +12,13 @@ class Column {
 private:
     std::string name;
     DataType type;
-    std::vector<Constraint> constraints;
+    std::vector<std::shared_ptr<Constraint>> constraints;
 public:
-    Column(std::string name, DataType type, const std::vector<Constraint> &constraints)
+    Column(std::string name, DataType type)
         : name(std::move(name)),
-          type(type),
-          constraints(constraints) {
-    }
+          type(type) {}
 
-    void addConstraint(std::shared_ptr<Constraint> constraint);
+    void addConstraint(const std::shared_ptr<Constraint>& constraint);
 
     bool isPrimaryKey() const;
     bool isUnique() const;
@@ -29,8 +27,6 @@ public:
     const std::string& getName() const;
     DataType getType() const;
     const std::vector<std::shared_ptr<Constraint>>& getConstraints() const;
-
-
 };
 
 #endif //COLUMN_H
