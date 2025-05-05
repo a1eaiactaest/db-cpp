@@ -2,7 +2,9 @@
 // Created by Piotrek Rybiec on 05/05/2025.
 //
 
-#include "Column.h";
+#include <algorithm>
+
+#include "Column.h"
 #include "Constraint.h"
 
 auto Column::addConstraint(const std::shared_ptr<Constraint>& constraint) -> void {
