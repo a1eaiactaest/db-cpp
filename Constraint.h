@@ -16,7 +16,7 @@ public:
     Constraint(ConstraintType type, std::string name) : type(type), name(std::move(name)) {}
     virtual ~Constraint();
     ConstraintType getType() const;
-    const std::string& getName() const { return name; }
+    const std::string& getName() const;
     virtual std::string toString() const;
 };
 
