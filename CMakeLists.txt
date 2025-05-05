@@ -18,6 +18,7 @@ add_executable(db_cpp main.cpp
         data_types.h
         value.cpp
         value.h
+        Column.cpp
         Column.h
         Constraint.cpp
         Constraint.h

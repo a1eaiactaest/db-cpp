@@ -6,7 +6,7 @@
 #define CONSTRAINT_H
 
 #include "data_types.h"
-#include "value.h"
+#include "Value.h"
 
 class Constraint {
 protected:

@@ -2,7 +2,7 @@
 // Created by Piotrek Rybiec on 30/04/2025.
 //
 
-#include "value.h"
+#include "Value.h"
 
 #include <iomanip>
 
