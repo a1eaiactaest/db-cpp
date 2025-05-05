@@ -9,6 +9,14 @@
 #include <unordered_map>
 #include <chrono>
 
+enum class ConstraintType {
+    PRIMARY_KEY,
+    FOREIGN_KEY,
+    UNIQUE,
+    NOT_NULL,
+    DEFAULT,
+};
+
 enum class DataType {
     INTEGER,
     FLOAT,
@@ -19,7 +27,9 @@ enum class DataType {
     NULL_VALUE,
 };
 
-class value;
+class Constraint;
+class ForeignKeyConstraint;
+class Value;
 
 using Date = std::chrono::year_month_day;
 using DateTime = std::chrono::sys_time<std::chrono::milliseconds>;

@@ -18,5 +18,8 @@ add_executable(db_cpp main.cpp
         data_types.h
         value.cpp
         value.h
+        Column.h
+        Constraint.cpp
+        Constraint.h
 )
 target_link_libraries(db_cpp fmt)
