@@ -7,11 +7,11 @@
 Constraint::~Constraint() = default;
 
 ConstraintType Constraint::getType() const {
-    return ;
+    return type;
 }
 
 std::string Constraint::toString() const {
-    return ;
+    return name;
 }
 
 

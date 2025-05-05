@@ -19,6 +19,18 @@ public:
     virtual std::string toString() const;
 };
 
+class PrimaryKeyConstraint : public Constraint {
+private:
+    std::vector<std::string> column_names;
+public:
+    PrimaryKeyConstraint(std::string name, std::vector<std::string> columns)
+        : Constraint(ConstraintType::PRIMARY_KEY, std::move(name)),
+        column_names(std::move(columns)) {}
+
+    const std::vector<std::string>& getColumnNames() const;
+    std::string toString() const override;
+};
+
 
 
 #endif //CONSTRAINT_H
