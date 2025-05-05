@@ -6,6 +6,7 @@
 #define CONSTRAINT_H
 
 #include "data_types.h"
+#include "value.h"
 
 class Constraint {
 protected:
@@ -23,11 +24,70 @@ class PrimaryKeyConstraint : public Constraint {
 private:
     std::vector<std::string> column_names;
 public:
-    PrimaryKeyConstraint(std::string name, std::vector<std::string> columns)
+    PrimaryKeyConstraint(const std::string& name, const std::vector<std::string>& columns)
         : Constraint(ConstraintType::PRIMARY_KEY, std::move(name)),
-        column_names(std::move(columns)) {}
+          column_names(std::move(columns)) {}
 
     const std::vector<std::string>& getColumnNames() const;
+    std::string toString() const override;
+};
+
+class ForeignKeyConstraint : public Constraint {
+private:
+    std::string column_name;
+    std::string ref_table;
+    std::string ref_column;
+public:
+    ForeignKeyConstraint(const std::string& name, const std::string& column_name,
+        const std::string& ref_table, const std::string& ref_column)
+        : Constraint(ConstraintType::FOREIGN_KEY, name),
+          column_name(column_name),
+          ref_table(ref_table),
+          ref_column(ref_column) {}
+
+    const std::string& getColumnName() const;
+    const std::string& getRefTable() const;
+    const std::string& getRefColumn() const;
+    std::string toString() const override;
+};
+
+class UniqueConstraint : public Constraint {
+private:
+    std::vector<std::string> column_names;
+public:
+    UniqueConstraint(const std::string &name, const std::vector<std::string> &column_names)
+        : Constraint(ConstraintType::UNIQUE, name),
+          column_names(column_names) {}
+
+    const std::vector<std::string>& getColumnNames() const;
+    std::string toString() const override;
+};
+
+class NotNullConstraint : public Constraint {
+private:
+    std::string column_name;
+public:
+    NotNullConstraint(ConstraintType type, const std::string &name, const std::string &column_name)
+        : Constraint(ConstraintType::NOT_NULL, name),
+          column_name(column_name) {}
+
+    const std::string& getColumnName() const;
+    std::string toString() const override;
+};
+
+class DefaultConstraint : public Constraint {
+private:
+    std::string column_name;
+    Value default_value;
+public:
+    DefaultConstraint(const std::string &name, const std::string &column_name,
+        const Value &default_value)
+        : Constraint(ConstraintType::DEFAULT, name),
+          column_name(column_name),
+          default_value(default_value) {}
+
+    const std::string& getColumnName() const;
+    const Value& getDefaultValue() const;
     std::string toString() const override;
 };
 
