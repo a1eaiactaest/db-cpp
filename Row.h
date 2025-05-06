@@ -22,7 +22,7 @@ public:
     bool hasColumn(const std::string& column_name) const;
     const ValueMap& getValues() const;
     bool empty() const;
-    bool removeColumn(const std::string& columnName);
+    bool removeColumn(const std::string& column_name);
 };
 
 #endif //ROW_H
