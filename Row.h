@@ -9,8 +9,7 @@
 #include <string>
 
 #include "Value.h"
-
-using ValueMap = std::unordered_map<std::string, Value>; 
+#include "CommonTypes.h"
 
 class Row {
 private:
