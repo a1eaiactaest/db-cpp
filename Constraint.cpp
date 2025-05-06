@@ -25,7 +25,7 @@ auto PrimaryKeyConstraint::getColumnNames() const -> const std::vector<std::stri
     return column_names;
 }
 
-auto PrimaryKeyConstraint::toString() const -> std::string override {
+auto PrimaryKeyConstraint::toString() const -> std::string  {
     return fmt::format("PRIMARY KEY ({})", fmt::join(column_names, ", "));
 }
 
@@ -49,7 +49,7 @@ auto UniqueConstraint::getColumnNames() const -> const std::vector<std::string>&
     return column_names;
 }
 
-auto UniqueConstraint::toString() const -> std::string override {
+auto UniqueConstraint::toString() const -> std::string {
     return fmt::format("UNIQUE ({})", fmt::join(column_names, ", "));
 }
 
@@ -57,7 +57,7 @@ auto NotNullConstraint::getColumnName() const -> const std::string& {
     return column_name;
 }
 
-auto NotNullConstraint::toString() const -> std::string override {
+auto NotNullConstraint::toString() const -> std::string {
     return fmt::format("NOT NULL ({})", column_name);
 }
 
@@ -69,6 +69,6 @@ auto DefaultConstraint::getDefaultValue() const -> const Value& {
     return default_value;
 }
 
-auto DefaultConstraint::toString() const -> std::string override {
+auto DefaultConstraint::toString() const -> std::string {
     return fmt::format("DEFAULT {} FOR {}", default_value.toString(), column_name);
 }
