@@ -16,6 +16,10 @@ auto Row::hasColumn(const std::string& column_name) const -> bool {
     return values.find(column_name) != values.end();
 }
 
+auto Row::hasColumn(const Column& col) const -> bool {
+    return values.find(col.getName()) != values.end();
+}
+
 auto Row::getValues() const -> const ValueMap& {
     return values;
 }

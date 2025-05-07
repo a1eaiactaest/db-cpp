@@ -32,7 +32,7 @@ public:
     bool hasColumn(const std::string& name) const;
     size_t getColumnIndex(const std::string& name) const;
 
-    void addRow(Row row);
+    void addRow(const Row& r);
     const RowList& getRows() const;
     Row& getRow(size_t index);
     size_t rowCount() const;
@@ -47,7 +47,7 @@ public:
     bool validateRow(const Row& row) const;
 
     void clear();
-    void clearRow();
+    void clearRows();
 
     ConstraintPtr getPrimaryKeyConstraint() const;
     std::vector<std::string> getPrimaryKeyColumns() const;
