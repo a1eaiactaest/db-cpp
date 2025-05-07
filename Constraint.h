@@ -7,6 +7,7 @@
 
 #include "data_types.h"
 #include "Value.h"
+#include "Row.h"
 
 class Constraint {
 protected:
@@ -18,6 +19,7 @@ public:
     ConstraintType getType() const;
     const std::string& getName() const;
     virtual std::string toString() const;
+    virtual bool validate(const Row& row, const Table& table) const;
 };
 
 class PrimaryKeyConstraint : public Constraint {
