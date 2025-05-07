@@ -26,5 +26,6 @@ add_executable(db_cpp main.cpp
         Table.h
         Row.cpp
         Row.h
+        CommonTypes.h
 )
 target_link_libraries(db_cpp fmt)
