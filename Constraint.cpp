@@ -5,6 +5,7 @@
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 
+#include "Table.h"
 #include "Constraint.h"
 
 Constraint::~Constraint() = default;
@@ -21,12 +22,44 @@ auto Constraint::toString() const -> std::string {
     return name;
 }
 
+auto Constraint::validate(const Row& row, const Table& table) const -> bool {
+    throw std::runtime_error("base Constraint::validate has been called, which is incorrect.");
+}
+
 auto PrimaryKeyConstraint::getColumnNames() const -> const std::vector<std::string>& {
     return column_names;
 }
 
 auto PrimaryKeyConstraint::toString() const -> std::string  {
     return fmt::format("PRIMARY KEY ({})", fmt::join(column_names, ", "));
+}
+
+auto PrimaryKeyConstraint::validate(const Row& row, const Table& table) const -> bool {
+    // all columns from pk exist in row
+    for (const auto& col_name : column_names) {
+        if (!row.hasColumn(col_name)) {
+            return false;
+        }
+    }
+
+    // values in the columns are unique across all rows in the table
+    for (const auto& existing_row : table.getRows()) {
+        bool all_equal = true;
+        for (const auto& col_name : column_names) {
+            if (existing_row.getValue(col_name) != row.getValue(col_name)) {
+                all_equal = false;
+                break;
+            }
+        }
+        if (all_equal) return false;
+    }
+    return true;
+}
+
+auto ForeignKeyConstraint::validate(const Row& row, const Table& table) const -> bool {
+    if (!row.hasColumn(column_name)) return false;
+
+    if (!table.getDatabase().tableExists(ref_table)) return false;
 }
 
 auto ForeignKeyConstraint::getColumnName() const -> const std::string& {

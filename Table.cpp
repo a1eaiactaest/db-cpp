@@ -101,8 +101,10 @@ auto Table::validateRow(const Row& row) const -> bool {
     }
 
     for (const auto& constraint : constraints_) {
-        // TODO: constraint validation
-        throw std::logic_error("function Table::validateRow not implemented");
+        //throw std::logic_error("function Table::validateRow not implemented");
+        if (!constraint->validate(row, *this)) {
+            return false;
+        }
     }
     return true;
 }

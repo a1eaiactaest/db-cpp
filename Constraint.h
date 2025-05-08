@@ -32,6 +32,8 @@ public:
 
     const std::vector<std::string>& getColumnNames() const;
     std::string toString() const override;
+    bool validate(const Row& row, const Table& table) const override;
+
 };
 
 class ForeignKeyConstraint : public Constraint {
@@ -51,6 +53,7 @@ public:
     const std::string& getRefTable() const;
     const std::string& getRefColumn() const;
     std::string toString() const override;
+    bool validate(const Row& row, const Table& table) const override;
 };
 
 class UniqueConstraint : public Constraint {
@@ -63,6 +66,7 @@ public:
 
     const std::vector<std::string>& getColumnNames() const;
     std::string toString() const override;
+    bool validate(const Row& row, const Table& table) const override;
 };
 
 class NotNullConstraint : public Constraint {
@@ -75,6 +79,7 @@ public:
 
     const std::string& getColumnName() const;
     std::string toString() const override;
+    bool validate(const Row& row, const Table& table) const override;
 };
 
 class DefaultConstraint : public Constraint {
@@ -91,6 +96,7 @@ public:
     const std::string& getColumnName() const;
     const Value& getDefaultValue() const;
     std::string toString() const override;
+    bool validate(const Row& row, const Table& table) const override;
 };
 
 
