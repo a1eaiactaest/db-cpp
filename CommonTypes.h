@@ -24,5 +24,6 @@ using RowList = std::vector<Row>;
 
 using ColumnMap = std::unordered_map<std::string, Column>;
 using TableMap = std::unordered_map<std::string, Table>;
+using TablePtrMap = std::unordered_map<std::string, TablePtr>;
 using DatabaseMap = std::unordered_map<std::string, Database>;
 using ValueMap = std::unordered_map<std::string, Value>;
