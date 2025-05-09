@@ -58,8 +58,7 @@ auto PrimaryKeyConstraint::validate(const Row& row, const Table& table) const ->
 
 auto ForeignKeyConstraint::validate(const Row& row, const Table& table) const -> bool {
     if (!row.hasColumn(column_name)) return false;
-
-    if (!table.getDatabase().tableExists(ref_table)) return false;
+    // TODO: finish after implementing Database class
 }
 
 auto ForeignKeyConstraint::getColumnName() const -> const std::string& {
