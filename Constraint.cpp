@@ -22,8 +22,9 @@ auto Constraint::toString() const -> std::string {
     return name;
 }
 
-auto Constraint::validate(const Row& row, const Table& table) const -> bool {
-    throw std::runtime_error("base Constraint::validate has been called, which is incorrect.");
+auto Constraint::validate(const Row& row, const Table& table, const Database& base) const -> bool {
+    //throw std::runtime_error("base Constraint::validate has been called, which is incorrect.");
+    return validate(row, table);
 }
 
 auto PrimaryKeyConstraint::getColumnNames() const -> const std::vector<std::string>& {
@@ -34,7 +35,7 @@ auto PrimaryKeyConstraint::toString() const -> std::string  {
     return fmt::format("PRIMARY KEY ({})", fmt::join(column_names, ", "));
 }
 
-auto PrimaryKeyConstraint::validate(const Row& row, const Table& table) const -> bool {
+auto PrimaryKeyConstraint::validate(const Row& row, const Table& table, const Database& base) const -> bool {
     // all columns from pk exist in row
     for (const auto& col_name : column_names) {
         if (!row.hasColumn(col_name)) {

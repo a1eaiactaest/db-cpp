@@ -7,7 +7,6 @@
 
 #include "data_types.h"
 #include "Value.h"
-#include "Table.h"
 #include "Row.h"
 
 class Database; // forward declaration, remvoe later
@@ -22,6 +21,7 @@ public:
     ConstraintType getType() const;
     const std::string& getName() const;
     virtual std::string toString() const;
+    virtual bool validate(const Row& row, const Table& table) const;
     virtual bool validate(const Row& row, const Table& table, const Database& base) const;
 };
 
