@@ -10,7 +10,7 @@ private:
     std::string name_;
     TablePtrMap tables_;
 public:
-    Database(std::string& name) : name_(name) {};
+    Database(std::string& name) : name_(std::move(name)) {};
     ~Database() = default;
 
     void addTable(TablePtr table);
