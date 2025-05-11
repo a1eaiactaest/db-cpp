@@ -3,9 +3,14 @@
 //
 
 #include "Row.h"
+#include "Column.h"
 
 auto Row::getValue(const std::string& column_name) const -> const Value& {
     return values.at(column_name);
+}
+
+auto Row::getValue(const Column& col) const -> const Value& {
+    return values.at(col.getName());
 }
 
 auto Row::setValue(const std::string& column_name, Value val) -> void {

@@ -7,6 +7,7 @@
 
 #include "Table.h"
 #include "Constraint.h"
+#include "Database.h"
 
 Constraint::~Constraint() = default;
 
@@ -36,11 +37,10 @@ auto PrimaryKeyConstraint::toString() const -> std::string  {
 }
 
 auto PrimaryKeyConstraint::validate(const Row& row, const Table& table, const Database& base) const -> bool {
-    // all columns from pk exist in row
+    // all columns from pk exist in row and cant be null
     for (const auto& col_name : column_names) {
-        if (!row.hasColumn(col_name)) {
-            return false;
-        }
+        if (!row.hasColumn(col_name)) return false;
+        if (row.getValue(col_name).isNull()) return false;
     }
 
     // values in the columns are unique across all rows in the table
@@ -57,9 +57,23 @@ auto PrimaryKeyConstraint::validate(const Row& row, const Table& table, const Da
     return true;
 }
 
-auto ForeignKeyConstraint::validate(const Row& row, const Table& table) const -> bool {
+auto ForeignKeyConstraint::validate(const Row& row, const Table& table, const Database& base) const -> bool {
     if (!row.hasColumn(column_name)) return false;
-    // TODO: finish after implementing Database class
+    if (!base.tableExists(ref_table)) return false;
+
+    auto ref_table_obj = base.getTable(ref_table);
+    if (!ref_table_obj) return false;
+
+    const auto& value = row.getValue(column_name);
+    if (value.isNull()) return true; // allow nulls
+
+    // check if value exists
+    for (const auto& ref_row : ref_table_obj->getRows()) {
+        if (ref_row.hasColumn(ref_column) && (ref_row.getValue(ref_column) == value)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 auto ForeignKeyConstraint::getColumnName() const -> const std::string& {

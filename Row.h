@@ -17,8 +17,10 @@ private:
 
 public:
     const Value& getValue(const std::string& column_name) const;
+    const Value& getValue(const Column& col) const;
     void setValue(const std::string& column_name, Value val);
     bool hasColumn(const std::string& column_name) const;
+    bool hasColumn(const Column& col) const;
     const ValueMap& getValues() const;
     bool empty() const;
     bool removeColumn(const std::string& column_name);
