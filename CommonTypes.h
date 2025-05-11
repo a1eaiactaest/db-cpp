@@ -11,10 +11,12 @@ class Row;
 class Table;
 class Database;
 class Value;
+class Command;
 
 using ConstraintPtr = std::shared_ptr<Constraint>;
 using ColumnPtr = std::shared_ptr<Column>;
 using TablePtr = std::shared_ptr<Table>;
+using CommandPtr = std::shared_ptr<Command>;
 
 using ConstraintList = std::vector<ConstraintPtr>;
 using TableList = std::vector<TablePtr>;
