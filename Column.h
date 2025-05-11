@@ -14,6 +14,7 @@ private:
     DataType type;
     std::vector<std::shared_ptr<Constraint>> constraints;
 public:
+    Column() = default;
     Column(std::string name, DataType type)
         : name(std::move(name)),
           type(type) {}
