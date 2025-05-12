@@ -6,6 +6,7 @@
 #include "Command.hpp"
 #include "CommonTypes.h"
 #include "Column.h"
+#include "Value.h"
 
 /*
     *
@@ -101,3 +102,105 @@ public:
     const std::string& getTableName() const;
     std::string toString() const override;
 };
+
+/*
+    *
+    *
+    *  ===== DML =====
+    *
+    *
+*/
+class InsertCommand : public Command {
+private:
+    std::string table_name_;
+    std::vector<std::string> column_names_;
+    std::vector<std::vector<Value>> values_;
+
+public:
+    InsertCommand(std::string table_name,
+                  std::vector<std::string> column_names,
+                  std::vector<std::vector<Value>> values)
+            : Command(CommandType::INSERT),
+              table_name_(std::move(table_name)),
+              column_names_(std::move(column_names)),
+              values_(std::move(values)) {}
+
+    const std::string& getTableName() const;
+    const std::vector<std::string> getColumnNames() const;
+    const std::vector<std::vector<Value>>& getValues() const;
+
+    std::string toString() const override;
+};
+
+
+class UpdateCommand : public Command {
+private:
+    std::string table_name_;
+    std::unordered_map<std::string, Value> column_values_;
+    std::string where_clause_; // if where is not specified then all records in table are updated
+
+public:
+    UpdateCommand(std::string table_name,
+                  std::unordered_map<std::string, Value> column_values,
+                  std::string where_clause = "")
+            : Command(CommandType::UPDATE),
+              table_name_(std::move(table_name)),
+              column_values_(std::move(column_values)),
+              where_clause_(std::move(where_clause)) {}
+
+    const std::string& getTableName() const;
+    const std::unordered_map<std::string, Value>& getColumnValues() const;
+    const std::string& getWhereClause() const;
+
+    std::string toString() const override;
+};
+
+class DeleteCommand : public Command {
+private:
+    std::string table_name_;
+    std::string where_clause_; // same as where clause in update command
+
+public:
+    DeleteCommand(std::string table_name, std::string where_clause = "")
+         : Command(CommandType::DELETE),
+           table_name_(std::move(table_name)),
+           where_clause_(std::move(where_clause)) {}
+
+    const std::string getTableName() const;
+    const std::string getWhereClause() const;
+
+    std::string toString() const override;
+};
+
+
+/*
+    *
+    *
+    *  ===== DQL =====
+    *
+    *
+*/
+class SelectCommand : public Command {
+private:
+    std::vector<std::string> column_names_;
+    std::vector<std::string> table_names_;
+    std::string where_clause_;
+
+public:
+    SelectCommand(std::vector<std::string> column_names, 
+                  std::vector<std::string> table_names,
+                  std::string where_clause = "")
+        : Command(CommandType::SELECT),
+          column_names_(std::move(column_names)),
+          table_names_(std::move(table_names)),
+          where_clause_(std::move(where_clause)) {}
+
+    const std::vector<std::string>& getColumnNames() const;
+    const std::vector<std::string>& getTableNames() const;
+    const std::string& getWhereClause() const;
+
+    std::string toString() const override;
+};
+
+
+
