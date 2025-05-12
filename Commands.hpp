@@ -202,5 +202,58 @@ public:
     std::string toString() const override;
 };
 
+/*
+    *
+    *
+    *  ===== File operations =====
+    *
+    *
+*/
 
+class SaveCommand : public Command {
+private:
+    std::string filename_;
 
+public:
+    explicit SaveCommand(std::string filename) : Command(CommandType::SAVE), filename_(std::move(filename)) {}
+
+    const std::string& getFilename() const;
+    std::string toString() const override;
+};
+
+// TODO: maybe add the destination table name as a parameter?
+class LoadCommand : public Command {
+private:
+    std::string filename_;
+
+public:
+    explicit LoadCommand(std::string filename) : Command(CommandType::LOAD), filename_(std::move(filename)) {}
+
+    const std::string& getFilename() const;
+    std::string toString() const override;
+};
+
+class ShowCommand : public Command {
+public:
+    enum class ShowType {
+        TABLES,
+        COLUMNS
+    };
+
+private:
+    ShowType show_type_;
+    std::string table_name_;
+
+public:
+    explicit ShowCommand(ShowType show_type = ShowType::TABLES) : Command(CommandType::SHOW), show_type_(show_type) {}
+
+    ShowCommand(std::string table_name) 
+        : Command(CommandType::SHOW),
+          show_type_(ShowType::COLUMNS),
+          table_name_(std::move(table_name)) {}
+
+    ShowType getShowType() const;
+    const std::string& getTableName() const;
+
+    std::string toString() const override;
+};
