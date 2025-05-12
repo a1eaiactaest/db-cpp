@@ -19,12 +19,12 @@ class CreateCommand : public Command {
 private:
     std::string table_name_;
     std::vector<Column> columns_;
-    std::vector<ConstraintPtr> constraints_;
+    ConstraintList constraints_;
 
 public:
     CreateCommand(std::string table_name,
                   std::vector<Column> columns,
-                  std::vector<ConstraintPtr> constraints = {}) // constraints empty by default
+                  ConstraintList constraints = {}) // constraints empty by default
         : Command(CommandType::CREATE),
           table_name_(std::move(table_name)),
           columns_(std::move(columns)),
@@ -32,7 +32,7 @@ public:
 
     const std::string& getTableName() const;
     const std::vector<Column>& getColumns() const;
-    const std::vector<ConstraintPtr>& getConstraints() const;
+    const ConstraintList& getConstraints() const;
 
     std::string toString() const override;
 };
@@ -82,7 +82,7 @@ public:
         new_column_() {} 
 
     // rest
-    const std::string& getTable() const;
+    const std::string& getTableName() const;
     AlterType getAlterType() const;
     const std::string& getColumnName() const;
     const std::string& getNewColumnName() const;
@@ -126,7 +126,7 @@ public:
               values_(std::move(values)) {}
 
     const std::string& getTableName() const;
-    const std::vector<std::string> getColumnNames() const;
+    const std::vector<std::string>& getColumnNames() const;
     const std::vector<std::vector<Value>>& getValues() const;
 
     std::string toString() const override;
