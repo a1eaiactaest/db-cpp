@@ -166,8 +166,8 @@ public:
            table_name_(std::move(table_name)),
            where_clause_(std::move(where_clause)) {}
 
-    const std::string getTableName() const;
-    const std::string getWhereClause() const;
+    const std::string& getTableName() const;
+    const std::string& getWhereClause() const;
 
     std::string toString() const override;
 };

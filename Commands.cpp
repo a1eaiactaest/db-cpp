@@ -2,6 +2,7 @@
 #include <fmt/ranges.h>
 #include <fmt/ranges.h>
 #include <fmt/core.h>
+#include <stdexcept>
 
 #include "data_types.h"
 #include "CommonTypes.h"
@@ -125,4 +126,109 @@ auto InsertCommand::toString() const -> std::string {
     return result;
 }
 
+
+auto UpdateCommand::getTableName() const -> const std::string& {
+    return table_name_;
+}
+
+auto UpdateCommand::getColumnValues() const -> const std::unordered_map<std::string, Value>& {
+    return column_values_;
+}
+
+auto UpdateCommand::getWhereClause() const -> const std::string& {
+    return where_clause_;
+}
+
+auto UpdateCommand::toString() const -> std::string {
+    std::vector<std::string> assignments;
+    for (const auto& [col, val] : column_values_) {
+        assignments.push_back(fmt::format("{} = {}", col, val.toString()));
+    }
+
+    std::string result = fmt::format("UPDATE {} SET {}", table_name_, fmt::join(assignments, ", "));
+
+    if (!where_clause_.empty()) {
+        result += fmt::format(" WHERE {}", where_clause_);
+    }
+
+    return result;
+}
+
+auto DeleteCommand::getTableName() const -> const std::string& {
+    return table_name_;
+}
+
+auto DeleteCommand::getWhereClause() const -> const std::string& {
+    return where_clause_;
+}
+
+auto DeleteCommand::toString() const -> std::string {
+    std::string result = fmt::format("DELETE FROM {}", table_name_);
+    if (!where_clause_.empty()) {
+        result += fmt::format(" WHERE {}", where_clause_);
+    }
+    return result;
+}
+
+auto SelectCommand::getColumnNames() const -> const std::vector<std::string>& {
+    return column_names_;
+}
+
+auto SelectCommand::getTableNames() const -> const std::vector<std::string>& {
+    return table_names_;
+}
+
+auto SelectCommand::getWhereClause() const -> const std::string& {
+    return where_clause_;
+}
+
+auto SelectCommand::toString() const -> std::string {
+    std::string column_part = column_names_.empty()
+        ? "*"
+        : fmt::format("{}", fmt::join(column_names_, ", "));
+
+    std::string table_part = fmt::format("{}", fmt::join(table_names_, ", "));
+
+    std::string result = fmt::format("SELECT {} FROM {}", column_part, table_part);
+
+    if (!where_clause_.empty()) {
+        result += fmt::format(" WHERE {}", where_clause_);
+    }
+    return result;
+}
+
+auto SaveCommand::getFilename() const -> const std::string& {
+    return filename_;
+};
+
+auto SaveCommand::toString() const -> std::string {
+    return fmt::format("SAVE TO '{}'", filename_);
+}
+
+auto LoadCommand::getFilename() const -> const std::string& {
+    return filename_;
+};
+
+auto LoadCommand::toString() const -> std::string {
+    return fmt::format("LOAD TO '{}'", filename_);
+}
+
+auto ShowCommand::getShowType() const -> ShowType {
+    return show_type_;
+}
+
+auto ShowCommand::getTableName() const -> const std::string& {
+    return table_name_;
+}
+
+auto ShowCommand::toString() const -> std::string {
+    switch (show_type_) {
+        case ShowType::TABLES:
+            return "SHOW TABLES";
+        case ShowType::COLUMNS:
+            return fmt::format("SHOW COLUMNS FROM {}", table_name_);
+        default:
+            throw std::runtime_error("unknown SHOW command");
+    }
+}
 
