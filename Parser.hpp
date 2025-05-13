@@ -19,6 +19,7 @@ private:
         std::vector<std::string> current_tables_names;
         std::string current_table_name;
         std::unordered_map<std::string, Value> current_values;
+        std::vector<std::vector<Value>> current_value_sets;
         std::string where_clause;
         std::vector<Column> current_columns_def;
         ConstraintList current_constraints;
@@ -29,6 +30,7 @@ private:
             current_tables_names.clear();
             current_table_name.clear();
             current_values.clear();
+            current_value_sets.clear();
             where_clause.clear();
             current_columns_def.clear();
             current_constraints.clear();
