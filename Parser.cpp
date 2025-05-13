@@ -221,3 +221,60 @@ auto Parser::handleValues() -> void{
     state_.current_value_sets = value_sets;
 }
 
+auto Parser::handleUpdate() -> void {
+    state_.current_command = CommandType::UPDATE;
+}
+
+auto Parser::handleSet() -> void {
+    if (state_.current_command != CommandType::UPDATE) {
+        throw std::runtime_error("SET found outside UPDATE statement!");
+    }
+
+    auto in_quotes = false;
+    auto cur_val_s = std::string();
+    auto cur_col = std::string();
+    auto expecting_value = false;
+
+    auto append_val = [&](){
+        if (!cur_val_s.empty()) {
+            Value val;
+            if (isString(cur_val_s)) {
+                val = Value(cur_val_s.substr(1, cur_val_s.length()-2));
+            } else if (isBool(cur_val_s)) {
+                val = Value(cur_val_s == "true");
+            } else if (isDouble(cur_val_s)) {
+                val = Value(std::stod(cur_val_s));
+            } else {
+                val = Value(std::stoi(cur_val_s));
+            }
+            state_.current_values[cur_col] = val;
+            cur_val_s.clear();
+            cur_col.clear();
+            expecting_value = false;
+        }
+    };
+
+    while (pos_ < query_.length()) {
+        char c = query_[pos_];
+        if (c == '\'' || c == '"') {
+            in_quotes = !in_quotes;
+            cur_val_s += c;
+        } else if (c == '=' && !in_quotes && !expecting_value) {
+            expecting_value = true;
+        } else if (c == ',' && !in_quotes) {
+            append_val();
+        } else if (!std::isspace(c) || in_quotes) {
+            if (expecting_value) {
+                cur_val_s += c;
+            } else {
+                cur_col += c;
+            }
+        }
+        pos_++;
+        // 'W' for 'W'HERE
+        if (!in_quotes && (pos_ >= query_.length() || query_[pos_] == ';' || query_[pos_] == 'W')) {
+            append_val();
+            break;
+        }
+    }
+}
