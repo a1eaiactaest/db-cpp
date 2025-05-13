@@ -1,14 +1,17 @@
 #pragma once
 
 #include <unordered_map>
+#include <vector>
 
 #include "Column.h"
 #include "Command.hpp"
 #include "CommonTypes.h"
+#include "Value.h"
 
 class Parser {
 private:
-    std::unordered_map<std::string, std::function<void(Parser&, const std::string&)>> handlers_;
+    //https://stackoverflow.com/a/3114231
+    std::unordered_map<std::string, void(Parser::*)()> handlers_;
     std::string query_;
     size_t pos_;
 

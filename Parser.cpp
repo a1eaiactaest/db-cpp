@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+#include "Value.h"
 
 Parser::Parser() {
     handlers_["SELECT"] = &Parser::handleSelect;
@@ -26,7 +27,9 @@ auto Parser::parse(const std::string& query) -> std::unique_ptr<Command> {
 
         auto handler = handlers_.find(keyword);
         if (handler != handlers_.end()) {
-            handler->second(*this, keyword);
+            //handler->second(*this, keyword);
+            //https://stackoverflow.com/a/3114231
+            (this->*handler->second)();
         }
     }
     return buildCommand();
