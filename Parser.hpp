@@ -8,9 +8,9 @@
 
 class Parser {
 private:
-    std::unordered_map<std::string, std::function<void(Parser&, const std::string&)>> keyword_handlers_;
+    std::unordered_map<std::string, std::function<void(Parser&, const std::string&)>> handlers_;
     std::string query_;
-    size_t pos;
+    size_t pos_;
 
     struct ParseState {
         CommandType current_command;
