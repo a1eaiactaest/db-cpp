@@ -43,7 +43,7 @@ auto Parser::findNextToken() -> std::string {
     skipWhitespace();
 
     if (pos_ >= query_.length()) {
-        return ""; // maybe throw an error?
+        return ""; // maybe throw an error instead?
     }
 
     std::string token;
@@ -68,3 +68,18 @@ auto Parser::findNextToken() -> std::string {
     }
     return token;
 }
+
+auto Parser::findNextKeyword() -> std::string {
+    std::string tok = findNextToken();
+    if (tok.empty()) return "";
+    std::transform(tok.begin(), tok.end(), tok.begin(), [](unsigned char c){
+        return std::toupper(c);
+    });
+    return isKeyword(tok) ? tok : "";
+}
+
+auto Parser::isKeyword(const std::string& token) const -> bool {
+    return handlers_.contains(token);
+}
+
+
