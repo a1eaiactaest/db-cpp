@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+#include "Commands.hpp"
 #include "Value.h"
 
 Parser::Parser() {
@@ -276,5 +277,55 @@ auto Parser::handleSet() -> void {
             append_val();
             break;
         }
+    }
+}
+
+auto Parser::handleDelete() -> void {
+    state_.current_command = CommandType::DELETE;
+}
+
+auto Parser::handleDrop() -> void {
+    state_.current_command = CommandType::DROP;
+}
+
+auto Parser::resetState() -> void {
+    state_ = ParseState();
+}
+
+auto Parser::buildCommand() -> std::unique_ptr<Command> {
+    switch (state_.current_command) {
+        case CommandType::SELECT:
+            return std::make_unique<SelectCommand>(
+                state_.current_columns_names,
+                state_.current_tables_names,
+                state_.where_clause
+            );
+        case CommandType::CREATE:
+            return std::make_unique<CreateCommand>(
+                state_.current_table_name,
+                state_.current_columns_def,
+                state_.current_constraints
+            );
+        case CommandType::DROP:
+            return std::make_unique<DropCommand>(state_.current_table_name);
+        case CommandType::INSERT:
+            return std::make_unique<InsertCommand>(
+                state_.current_table_name,
+                state_.current_columns_names,
+                state_.current_value_sets
+            );
+        case CommandType::UPDATE:
+            return std::make_unique<UpdateCommand>(
+                state_.current_table_name,
+                state_.current_values,
+                state_.where_clause
+            );
+        case CommandType::DELETE:
+            return std::make_unique<DeleteCommand>(
+                state_.current_table_name,
+                state_.where_clause
+            );
+        default:
+            return nullptr;
     }
 }
