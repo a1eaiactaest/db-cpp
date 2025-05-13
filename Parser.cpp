@@ -218,5 +218,6 @@ auto Parser::handleValues() -> void{
             break;
         }
     }
+    state_.current_value_sets = value_sets;
 }
 
