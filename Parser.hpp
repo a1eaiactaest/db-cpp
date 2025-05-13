@@ -43,18 +43,18 @@ private:
 
     // all operations work on state, hence no return values
     // also, not sure if this is the correct form, kind of makes sense with out making an overkill
-    void handleSelect(const std::string& keyword);
-    void handleFrom(const std::string& keyword);
-    void handleWhere(const std::string& keyword);
-    void handleCreate(const std::string& keyword);
-    void handleTable(const std::string& keyword);
-    void handleInsert(const std::string& keyword);
-    void handleInto(const std::string& keyword);
-    void handleValues(const std::string& keyword);
-    void handleUpdate(const std::string& keyword);
-    void handleSet(const std::string& keyword);
-    void handleDelete(const std::string& keyword);
-    void handleDrop(const std::string& keyword);
+    void handleSelect();
+    void handleFrom();
+    void handleWhere();
+    void handleCreate();
+    void handleTable();
+    void handleInsert();
+    void handleInto();
+    void handleValues();
+    void handleUpdate();
+    void handleSet();
+    void handleDelete();
+    void handleDrop();
 
     std::unique_ptr<Command> buildCommand();
 public:

@@ -69,6 +69,7 @@ auto Parser::findNextToken() -> std::string {
     return token;
 }
 
+// this will always return capitalized
 auto Parser::findNextKeyword() -> std::string {
     std::string tok = findNextToken();
     if (tok.empty()) return "";
@@ -82,4 +83,16 @@ auto Parser::isKeyword(const std::string& token) const -> bool {
     return handlers_.contains(token);
 }
 
+auto Parser::handleSelect() -> void {
+    state_.current_command = CommandType::SELECT;
 
+    while (pos_ < query_.length()) {
+        std::string tok = findNextToken();
+        if (tok.empty() || tok == "FROM") break;
+        if (tok != ",") {
+            state_.current_columns_names.push_back(tok);
+        }
+    }
+}
+
+auto Parser::handleFrom()
