@@ -60,7 +60,7 @@ auto Executor::executeSelect(const SelectCommand& c) -> void {
 
     for (const auto& row : rows) {
         for (const auto& col : columns) {
-            auto value = row.getValue(col);
+            const auto& value = row.getValue(col);
             if (!value.isNull()) {
                 fmt::print("{}\t", value.toString());
             } else {

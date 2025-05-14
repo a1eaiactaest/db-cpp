@@ -20,6 +20,7 @@ public:
     explicit Value(const Date& v) : value(v){}
     explicit Value(const DateTime& v) : value(v){}
     Value(const Value& other) = default; // copy constructor
+    Value& operator=(const Value& other) = default; // assignment operator
 
     /*
     Value v1;

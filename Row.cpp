@@ -13,8 +13,8 @@ auto Row::getValue(const Column& col) const -> const Value& {
     return values.at(col.getName());
 }
 
-auto Row::setValue(const std::string& column_name, Value val) -> void {
-    values[column_name] = std::move(val);
+void Row::setValue(const std::string& column_name, const Value& val) {
+    values[column_name] = val;
 }
 
 auto Row::hasColumn(const std::string& column_name) const -> bool {
