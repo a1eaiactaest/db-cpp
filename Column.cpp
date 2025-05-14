@@ -48,3 +48,7 @@ auto Column::getType() const -> DataType {
 auto Column::getConstraints() const -> const std::vector<std::shared_ptr<Constraint>>& {
     return constraints;
 }
+
+auto Column::setName(std::string new_name) -> void {
+    name = std::move(new_name);
+}

@@ -13,6 +13,10 @@ private:
     void executeInsert(const InsertCommand& command);
     void executeUpdate(const UpdateCommand& command);
     void executeDelete(const DeleteCommand& command);
+    void executeAlter(const AlterCommand& command);
+    void executeSave(const SaveCommand& command);
+    void executeLoad(const LoadCommand& command);
+    void executeShow(const ShowCommand& command);
 
 public:
     explicit Executor(Database& database) : database_(database) {}

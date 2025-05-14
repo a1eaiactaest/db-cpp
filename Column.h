@@ -28,6 +28,7 @@ public:
     const std::string& getName() const;
     DataType getType() const;
     const std::vector<std::shared_ptr<Constraint>>& getConstraints() const;
+    void setName(std::string new_name);
 };
 
 #endif //COLUMN_H

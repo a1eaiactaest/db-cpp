@@ -142,3 +142,26 @@ auto Table::getPrimaryKeyColumns() const -> std::vector<std::string> {
     }
     return pk_columns;;
 }
+
+auto Table::dropColumn(const std::string& name) -> void {
+    auto it = std::find_if(columns_.begin(), columns_.end(), 
+        [&name](const Column& col) { return col.getName() == name; });
+    if (it != columns_.end()) {
+        columns_.erase(it);
+        column_index_map_.erase(name);
+        // update indices for remaining columns, it may be a little overhead?
+        for (size_t i = 0; i < columns_.size(); i++) {
+            column_index_map_[columns_[i].getName()] = i;
+        }
+    }
+}
+
+auto Table::renameColumn(const std::string& old_name, const std::string& new_name) -> void {
+    auto it = std::find_if(columns_.begin(), columns_.end(), 
+        [&old_name](const Column& col) { return col.getName() == old_name; });
+    if (it != columns_.end()) {
+        it->setName(new_name);
+        column_index_map_.erase(old_name);
+        column_index_map_[new_name] = std::distance(columns_.begin(), it);
+    }
+}

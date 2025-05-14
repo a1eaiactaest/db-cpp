@@ -33,6 +33,8 @@ public:
     const ColumnList& getColumns() const;
     bool hasColumn(const std::string& name) const;
     size_t getColumnIndex(const std::string& name) const;
+    void dropColumn(const std::string& name);
+    void renameColumn(const std::string& old_name, const std::string& new_name);
 
     void addRow(const Row& r);
     const RowList& getRows() const;
