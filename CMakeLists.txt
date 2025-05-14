@@ -29,5 +29,13 @@ add_executable(db_cpp main.cpp
         CommonTypes.h
         Database.h
         Database.cpp
+        Command.cpp
+        Command.hpp
+        Commands.cpp
+        Commands.hpp
+        Parser.cpp
+        Parser.h
+        Executor.hpp
+        Executor.cpp
 )
 target_link_libraries(db_cpp fmt)

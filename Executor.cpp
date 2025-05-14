@@ -156,6 +156,12 @@ auto Executor::executeDelete(const DeleteCommand& c) -> void {
     if (!table) {
         throw std::runtime_error(fmt::format("table '{}' doesnt exist", table_name));
     }
+
+    const auto& where_clause = c.getWhereClause();
+
+    //TODO: also where shit
+    table->clear();
+    fmt::println("successfully deleted rows from '{}'", table_name);
 }
 
 
