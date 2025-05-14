@@ -9,8 +9,6 @@
 #include "Constraint.h"
 #include "Database.h"
 
-Constraint::~Constraint() = default;
-
 auto Constraint::getType() const -> ConstraintType {
     return type;
 }

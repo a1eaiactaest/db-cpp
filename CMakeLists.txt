@@ -34,7 +34,7 @@ add_executable(db_cpp main.cpp
         Commands.cpp
         Commands.hpp
         Parser.cpp
-        Parser.h
+        Parser.hpp
         Executor.hpp
         Executor.cpp
 )

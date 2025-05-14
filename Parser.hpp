@@ -5,6 +5,7 @@
 #include "Column.h"
 #include "Command.hpp"
 #include "CommonTypes.h"
+#include "Value.h"
 
 class Parser {
 private:

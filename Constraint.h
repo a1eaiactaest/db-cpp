@@ -16,13 +16,13 @@ protected:
     ConstraintType type;
     std::string name;
 public:
+    virtual ~Constraint() = default;
     Constraint(ConstraintType type, std::string name) : type(type), name(std::move(name)) {}
-    virtual ~Constraint();
     ConstraintType getType() const;
     const std::string& getName() const;
     virtual std::string toString() const;
-    virtual bool validate(const Row& row, const Table& table) const;
-    virtual bool validate(const Row& row, const Table& table, const Database& base) const;
+    virtual bool validate(const Row& row, const Table& table) const = 0;
+    virtual bool validate(const Row& row, const Table& table, const Database& base) const = 0;
 };
 
 class PrimaryKeyConstraint : public Constraint {
