@@ -113,6 +113,11 @@ auto Executor::executeInsert(const InsertCommand& c) -> void {
 
     // for each set of values -> insert a row
     for (const auto& value_set : values) {
+        if (value_set.size() != column_names.size()) {
+            throw std::runtime_error(fmt::format("mismatch between number of columns ({}) and values ({})", 
+                column_names.size(), value_set.size()));
+        }
+
         Row row;
         for (int i = 0; i < column_names.size(); i++) {
             row.setValue(column_names[i], value_set[i]);
@@ -129,8 +134,11 @@ auto Executor::executeInsert(const InsertCommand& c) -> void {
 
 auto Executor::executeUpdate(const UpdateCommand& c) -> void {
     const std::string& table_name = c.getTableName();
-    auto table = database_.getTable(table_name);
+    if (table_name.empty()) {
+        throw std::runtime_error("no table specified in UPDATE");
+    }
 
+    auto table = database_.getTable(table_name);
     if (!table) {
         throw std::runtime_error(fmt::format("table '{}' doesnt exist", table_name));
     }
@@ -151,8 +159,11 @@ auto Executor::executeUpdate(const UpdateCommand& c) -> void {
 
 auto Executor::executeDelete(const DeleteCommand& c) -> void {
     const std::string& table_name = c.getTableName();
-    auto table = database_.getTable(table_name);
+    if (table_name.empty()) {
+        throw std::runtime_error("no table specified in DELETE");
+    }
 
+    auto table = database_.getTable(table_name);
     if (!table) {
         throw std::runtime_error(fmt::format("table '{}' doesnt exist", table_name));
     }

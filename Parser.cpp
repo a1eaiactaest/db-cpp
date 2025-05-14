@@ -89,10 +89,24 @@ auto Parser::isKeyword(const std::string& token) const -> bool {
 
 auto Parser::handleSelect() -> void {
     state_.current_command = CommandType::SELECT;
+    state_.current_tables_names.clear(); 
+    state_.current_columns_names.clear(); 
 
     while (pos_ < query_.length()) {
         auto tok = findNextToken();
-        if (tok.empty() || tok == "FROM") break;
+        if (tok.empty()) break;
+        if (tok == "FROM") {
+            // Process the FROM part immediately
+            while (pos_ < query_.length()) {
+                auto table_tok = findNextToken();
+                if (table_tok.empty() || table_tok == "WHERE" || table_tok == ";") break;
+                if (table_tok != ",") {
+                    state_.current_tables_names.push_back(table_tok);
+                    state_.current_table_name = table_tok;
+                }
+            }
+            break;
+        }
         if (tok != ",") {
             state_.current_columns_names.push_back(tok);
         }
@@ -100,13 +114,8 @@ auto Parser::handleSelect() -> void {
 }
 
 auto Parser::handleFrom() -> void {
-    while (pos_ < query_.length()) {
-        auto tok = findNextToken();
-        if (tok.empty() || tok == "WHERE" || tok == ";") break;
-        if (tok != ",") {
-            state_.current_tables_names.push_back(tok);
-        }
-    }
+    // FROM is now handled in handleSelect
+    return;
 }
 
 auto Parser::handleWhere() -> void {
@@ -139,6 +148,18 @@ auto Parser::handleInsert() -> void {
 auto Parser::handleInto() -> void {
     if (state_.current_command == CommandType::INSERT) {
         state_.current_table_name = findNextToken();
+        
+        // column names in parentheses
+        auto tok = findNextToken();
+        if (tok == "(") {
+            while (pos_ < query_.length()) {
+                tok = findNextToken();
+                if (tok == ")") break;
+                if (tok != ",") {
+                    state_.current_columns_names.push_back(tok);
+                }
+            }
+        }
     }
 }
 
@@ -224,6 +245,7 @@ auto Parser::handleValues() -> void{
 
 auto Parser::handleUpdate() -> void {
     state_.current_command = CommandType::UPDATE;
+    state_.current_table_name = findNextToken(); // table name after UPDATE
 }
 
 auto Parser::handleSet() -> void {
@@ -282,6 +304,10 @@ auto Parser::handleSet() -> void {
 
 auto Parser::handleDelete() -> void {
     state_.current_command = CommandType::DELETE;
+    auto tok = findNextToken(); // skip FROM
+    if (tok == "FROM") {
+        state_.current_table_name = findNextToken(); // get table name after FROM
+    }
 }
 
 auto Parser::handleDrop() -> void {
@@ -295,6 +321,12 @@ auto Parser::resetState() -> void {
 auto Parser::buildCommand() -> std::unique_ptr<Command> {
     switch (state_.current_command) {
         case CommandType::SELECT:
+            if (state_.current_tables_names.empty()) {
+                throw std::runtime_error("no table specified in SELECT");
+            }
+            if (state_.current_columns_names.empty()) {
+                state_.current_columns_names.push_back("*");  // Default to all columns if none specified
+            }
             return std::make_unique<SelectCommand>(
                 state_.current_columns_names,
                 state_.current_tables_names,

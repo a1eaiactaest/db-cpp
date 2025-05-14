@@ -19,6 +19,7 @@ public:
     explicit Value(const char* v) : value(std::string(v)){} // for inline Value("adasd") definition
     explicit Value(const Date& v) : value(v){}
     explicit Value(const DateTime& v) : value(v){}
+    Value(const Value& other) = default; // copy constructor
 
     /*
     Value v1;
