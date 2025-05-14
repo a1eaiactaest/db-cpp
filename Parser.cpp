@@ -96,15 +96,7 @@ auto Parser::handleSelect() -> void {
         auto tok = findNextToken();
         if (tok.empty()) break;
         if (tok == "FROM") {
-            // Process the FROM part immediately
-            while (pos_ < query_.length()) {
-                auto table_tok = findNextToken();
-                if (table_tok.empty() || table_tok == "WHERE" || table_tok == ";") break;
-                if (table_tok != ",") {
-                    state_.current_tables_names.push_back(table_tok);
-                    state_.current_table_name = table_tok;
-                }
-            }
+            handleFrom();
             break;
         }
         if (tok != ",") {
@@ -114,8 +106,17 @@ auto Parser::handleSelect() -> void {
 }
 
 auto Parser::handleFrom() -> void {
-    // FROM is now handled in handleSelect
-    return;
+    // only process table names if we're in a SELECT command, otherwise won't work lmao
+    if (state_.current_command == CommandType::SELECT) {
+        while (pos_ < query_.length()) {
+            auto tok = findNextToken();
+            if (tok.empty() || tok == "WHERE" || tok == ";") break;
+            if (tok != ",") {
+                state_.current_tables_names.push_back(tok);
+                state_.current_table_name = tok;
+            }
+        }
+    }
 }
 
 auto Parser::handleWhere() -> void {
