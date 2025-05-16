@@ -102,6 +102,14 @@ public:
     const std::string& getColumnName() const;
     const Value& getDefaultValue() const;
     std::string toString() const override;
+    bool validate(const Row& row, const Table& table) const override {
+        // Default constraints are always valid as they only provide default values
+        return true;
+    }
+    bool validate(const Row& row, const Table& table, const Database& base) const override {
+        // Default constraints are always valid as they only provide default values
+        return true;
+    }
 };
 
 
