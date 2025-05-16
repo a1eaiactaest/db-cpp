@@ -18,6 +18,11 @@ public:
     Column(std::string name, DataType type)
         : name(std::move(name)),
           type(type) {}
+    Column(std::string name, DataType type, bool nullable) : name(std::move(name)), type(type) {
+        if (!nullable) {
+            addConstraint(std::make_shared<NotNullConstraint>(ConstraintType::NOT_NULL, name + "_not_null", name));
+        }
+    }
 
     void addConstraint(const std::shared_ptr<Constraint>& constraint);
 
