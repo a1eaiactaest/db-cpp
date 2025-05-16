@@ -8,7 +8,7 @@
 class Serializer {
 public: 
     static bool serializeDatabase(const Database& db, const std::string& filename);
-    static bool deserializeDatabase(const Database& db, const std::string& filename);
+    static bool deserializeDatabase(Database& db, const std::string& filename);
 
 private:
     static std::string serializeTable(const Table& table);
