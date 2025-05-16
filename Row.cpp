@@ -29,6 +29,10 @@ auto Row::getValues() const -> const ValueMap& {
     return values;
 }
 
+auto Row::size() const -> int {
+    return values.size();
+}
+
 auto Row::empty() const -> bool {
     return values.empty();
 }

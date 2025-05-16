@@ -22,6 +22,7 @@ public:
     bool hasColumn(const std::string& column_name) const;
     bool hasColumn(const Column& col) const;
     const ValueMap& getValues() const;
+    int size() const;
     bool empty() const;
     bool removeColumn(const std::string& column_name);
 };
