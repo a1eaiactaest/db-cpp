@@ -24,7 +24,6 @@ private:
     std::unordered_map<std::string, size_t> column_index_map_;
 
 public:
-    explicit Table(std::string& name);
     explicit Table(std::string name);
     Table(const std::string& name, const std::vector<Column>& columns);
 

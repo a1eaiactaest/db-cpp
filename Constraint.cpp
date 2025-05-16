@@ -35,6 +35,10 @@ auto PrimaryKeyConstraint::toString() const -> std::string  {
 }
 
 auto PrimaryKeyConstraint::validate(const Row& row, const Table& table, const Database& base) const -> bool {
+    return validate(row, table);
+}
+
+auto PrimaryKeyConstraint::validate(const Row& row, const Table& table) const -> bool {
     // all columns from pk exist in row and cant be null
     for (const auto& col_name : column_names) {
         if (!row.hasColumn(col_name)) return false;
@@ -53,6 +57,13 @@ auto PrimaryKeyConstraint::validate(const Row& row, const Table& table, const Da
         if (all_equal) return false;
     }
     return true;
+}
+
+auto ForeignKeyConstraint::validate(const Row& row, const Table& table) const -> bool {
+    if (!row.hasColumn(column_name)) return false;
+    const auto& value = row.getValue(column_name);
+    if (value.isNull()) return true; // allow nulls
+    return false; // without database context, we can't validate foreign key references
 }
 
 auto ForeignKeyConstraint::validate(const Row& row, const Table& table, const Database& base) const -> bool {
@@ -96,6 +107,28 @@ auto UniqueConstraint::getColumnNames() const -> const std::vector<std::string>&
 
 auto UniqueConstraint::toString() const -> std::string {
     return fmt::format("UNIQUE ({})", fmt::join(column_names, ", "));
+}
+
+auto UniqueConstraint::validate(const Row& row, const Table& table) const -> bool {
+    return validate(row, table, Database(""));
+}
+
+auto UniqueConstraint::validate(const Row& row, const Table& table, const Database& base) const -> bool {
+    for (const auto& col_name : column_names) {
+        if (!row.hasColumn(col_name)) return false;
+    }
+
+    for (const auto& existing_row : table.getRows()) {
+        bool all_equal = true;
+        for (const auto& col_name : column_names) {
+            if (existing_row.getValue(col_name) != row.getValue(col_name)) {
+                all_equal = false;
+                break;
+            }
+        }
+        if (all_equal) return false;
+    }
+    return true;
 }
 
 auto NotNullConstraint::getColumnName() const -> const std::string& {

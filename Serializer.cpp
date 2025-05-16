@@ -223,16 +223,45 @@ auto Serializer::deserializeConstraint(Table& table, std::ifstream& file) -> boo
     std::string line = readLine(file);
     std::istringstream iss(line);
     int type;
+    std::string name;
     std::vector<std::string> columns;
     std::string col;
 
-    iss >> type;
+    iss >> type >> name;
     while (iss >> col) {
         columns.push_back(col);
     }
 
-    auto constraint = std::make_shared<Constraint>(static_cast<ConstraintType>(type), columns);
-    table.addConstraint(constraint);
+    std::shared_ptr<Constraint> constraint;
+    switch (static_cast<ConstraintType>(type)) {
+        case ConstraintType::PRIMARY_KEY:
+            constraint = std::make_shared<PrimaryKeyConstraint>(name, columns);
+            break;
+        case ConstraintType::FOREIGN_KEY:
+            if (columns.size() >= 3) {
+                constraint = std::make_shared<ForeignKeyConstraint>(name, columns[0], columns[1], columns[2]);
+            }
+            break;
+        case ConstraintType::UNIQUE:
+            constraint = std::make_shared<UniqueConstraint>(name, columns);
+            break;
+        case ConstraintType::NOT_NULL:
+            if (!columns.empty()) {
+                constraint = std::make_shared<NotNullConstraint>(ConstraintType::NOT_NULL, name, columns[0]);
+            }
+            break;
+        case ConstraintType::DEFAULT:
+            if (columns.size() >= 2) {
+                // TODO: Parse default value properly
+                Value default_value(columns[1]);
+                constraint = std::make_shared<DefaultConstraint>(name, columns[0], default_value);
+            }
+            break;
+    }
+
+    if (constraint) {
+        table.addConstraint(constraint);
+    }
     return true;
 }
 

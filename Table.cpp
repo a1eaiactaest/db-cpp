@@ -14,7 +14,6 @@
 #include "Column.h"
 
 Table::Table(std::string name) : name_(std::move(name)) {}
-Table::Table(std::string& name) : name_(name) {}
 Table::Table(const std::string& name, const std::vector<Column>& columns) : name_(name), columns_(columns) {
     for (int i = 0; i < columns_.size(); i++) {
         column_index_map_[columns_[i].getName()] = i;
