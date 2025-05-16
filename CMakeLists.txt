@@ -37,5 +37,6 @@ add_executable(db_cpp main.cpp
         Parser.hpp
         Executor.hpp
         Executor.cpp
+        Serializer.h
 )
 target_link_libraries(db_cpp fmt)
