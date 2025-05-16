@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "data_types.h"
+#include "Constraint.h"
 
 class Column {
 private:

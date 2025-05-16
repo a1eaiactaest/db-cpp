@@ -106,6 +106,14 @@ auto NotNullConstraint::toString() const -> std::string {
     return fmt::format("NOT NULL ({})", column_name);
 }
 
+auto NotNullConstraint::validate(const Row& row, const Table& table) const -> bool {
+    return !row.getValue(column_name).isNull();
+}
+
+auto NotNullConstraint::validate(const Row& row, const Table& table, const Database& database) const -> bool {
+    return validate(row, table);
+}
+
 auto DefaultConstraint::getColumnName() const -> const std::string& {
     return column_name;
 }

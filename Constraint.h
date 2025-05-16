@@ -80,6 +80,8 @@ public:
 
     const std::string& getColumnName() const;
     std::string toString() const override;
+    bool validate(const Row& row, const Table& table) const override;
+    bool validate(const Row& row, const Table& table, const Database& base) const override;
 };
 
 class DefaultConstraint : public Constraint {
