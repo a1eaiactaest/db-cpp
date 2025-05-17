@@ -1,21 +1,8 @@
 #include "Parser.hpp"
 #include "Commands.hpp"
 #include "Value.h"
-
-Parser::Parser() {
-    handlers_["SELECT"] = &Parser::handleSelect;
-    handlers_["FROM"] = &Parser::handleFrom;
-    handlers_["WHERE"] = &Parser::handleWhere;
-    handlers_["CREATE"] = &Parser::handleCreate;
-    handlers_["TABLE"] = &Parser::handleTable;
-    handlers_["INSERT"] = &Parser::handleInsert;
-    handlers_["INTO"] = &Parser::handleInto;
-    handlers_["VALUES"] = &Parser::handleValues;
-    handlers_["UPDATE"] = &Parser::handleUpdate;
-    handlers_["SET"] = &Parser::handleSet;
-    handlers_["DELETE"] = &Parser::handleDelete;
-    handlers_["DROP"] = &Parser::handleDrop;
-}
+#include "Table.h"
+#include <fmt/core.h>
 
 auto Parser::parse(const std::string& query) -> std::unique_ptr<Command> {
     query_ = query;
@@ -139,6 +126,49 @@ auto Parser::handleCreate() -> void {
 auto Parser::handleTable() -> void {
     if (state_.current_command == CommandType::CREATE) {
         state_.current_table_name = findNextToken();
+        
+        // Expect opening parenthesis for column definitions
+        auto tok = findNextToken();
+        if (tok != "(") {
+            throw std::runtime_error("expected '(' after table name");
+        }
+
+        // Parse column definitions
+        while (pos_ < query_.length()) {
+            auto col_name = findNextToken();
+            if (col_name.empty()) break;
+            if (col_name == ")") break;
+
+            auto type_name = findNextToken();
+            if (type_name.empty()) {
+                throw std::runtime_error("expected data type after column name");
+            }
+
+            // Convert type name to DataType
+            DataType type;
+            if (type_name == "INT" || type_name == "INTEGER") {
+                type = DataType::INTEGER;
+            } else if (type_name == "VARCHAR" || type_name == "STRING") {
+                type = DataType::STRING;
+            } else if (type_name == "BOOLEAN") {
+                type = DataType::BOOLEAN;
+            } else if (type_name == "FLOAT" || type_name == "DOUBLE") {
+                type = DataType::FLOAT;
+            } else {
+                throw std::runtime_error(fmt::format("unsupported data type: {}", type_name));
+            }
+
+            // Create column and add it to the list
+            Column col(col_name, type);
+            state_.current_columns_def.push_back(col);
+
+            // Check for next column or end of definition
+            tok = findNextToken();
+            if (tok == ")") break;
+            if (tok != ",") {
+                throw std::runtime_error("expected ',' or ')' after column definition");
+            }
+        }
     }
 }
 
@@ -149,10 +179,13 @@ auto Parser::handleInsert() -> void {
 auto Parser::handleInto() -> void {
     if (state_.current_command == CommandType::INSERT) {
         state_.current_table_name = findNextToken();
-        
+
         // column names in parentheses
+        auto saved_pos = pos_;
         auto tok = findNextToken();
-        if (tok == "(") {
+        if (tok != "(") {
+            pos_ = saved_pos; // backtrack if no column list
+        } else {
             while (pos_ < query_.length()) {
                 tok = findNextToken();
                 if (tok == ")") break;
@@ -182,65 +215,62 @@ auto Parser::handleValues() -> void{
         throw std::runtime_error("VALUES keyword found outside INSERT statement!");
     }
 
+    // Skip the VALUES keyword
+    auto tok = findNextToken();
+    if (tok != "(") {
+        throw std::runtime_error("expected '(' after VALUES");
+    }
+
     auto value_sets = std::vector<std::vector<Value>>();
     auto current_set = std::vector<Value>();
-    auto in_parentheses = false;
-    auto in_quotes = false;
-    auto cur_val_s = std::string();
 
-    auto append_val = [&](){
-        if (!cur_val_s.empty()) {
-            if (isString(cur_val_s)) {
-                current_set.push_back(
-                    Value(cur_val_s.substr(1, cur_val_s.length()-2))
-                );
-            } else if (isBool(cur_val_s)) {
-                current_set.push_back(Value(cur_val_s == "true"));
-            } else if (isDouble(cur_val_s)) {
-                current_set.push_back(Value(std::stod(cur_val_s)));
-            } else {
-                current_set.push_back(Value(std::stoi(cur_val_s)));
-            } // TODO: maybe check for date, and datetime altough they can be treated as strings for now
-            cur_val_s.clear();
+    // if no column names were specified, use all columns from the table
+    if (state_.current_columns_names.empty()) {
+        fmt::print("Looking up table: {}\n", state_.current_table_name);
+        auto table = database_.getTable(state_.current_table_name);
+        if (table) {
+            fmt::print("Found table, getting columns\n");
+            for (const auto& col : table->getColumns()) {
+                fmt::print("Adding column: {}\n", col.getName());
+                state_.current_columns_names.push_back(col.getName());
+            }
+            fmt::print("Total columns added: {}\n", state_.current_columns_names.size());
+        } else {
+            fmt::print("Table not found!\n");
         }
-    };
+    }
 
     while (pos_ < query_.length()) {
-        char c = query_[pos_];
+        tok = findNextToken();
+        if (tok.empty()) break;
 
-        if (c == '(') {
-            if (!in_parentheses) {
-                in_parentheses = true;
-                current_set.clear();
-            } else {
-                throw std::runtime_error("nested parentheses in VALUES!");
-            }
-        } else if (c == ')') {
-            if (in_parentheses) {
-                in_parentheses = false;
-                append_val();
+        if (tok == "(") {
+            current_set.clear();
+        } else if (tok == ")") {
+            if (!current_set.empty()) {
                 value_sets.push_back(current_set);
+            }
+        } else if (tok == ",") {
+            // Skip commas, delete this later
+        } else {
+            // Parse the value
+            if (isString(tok)) {
+                current_set.push_back(Value(tok.substr(1, tok.length()-2)));
+            } else if (isBool(tok)) {
+                current_set.push_back(Value(tok == "true"));
+            } else if (isDouble(tok)) {
+                current_set.push_back(Value(std::stod(tok)));
             } else {
-                throw std::runtime_error("unexpected closing parenthesis in VALUES!");
+                current_set.push_back(Value(std::stoi(tok)));
             }
-        } else if (c == '\'' || c == '"') {
-            in_quotes = !in_quotes;
-            cur_val_s += c;
-        } else if (c == ',' && !in_quotes) {
-            if (in_parentheses) {
-                append_val();
-            }
-        } else if (!std::isspace(c) || in_quotes) {
-            cur_val_s += c;
         }
 
-        pos_++;
-
-        // end of VALUES 
-        if (!in_parentheses && !in_quotes && (pos_ >= query_.length() || query_[pos_] == ';')) {
+        // Check for end of statement
+        if (tok == ";" || pos_ >= query_.length()) {
             break;
         }
     }
+
     state_.current_value_sets = value_sets;
 }
 

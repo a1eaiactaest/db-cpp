@@ -7,30 +7,38 @@
 #include <memory>
 
 auto Database::addTable(TablePtr table) -> void {
-    if (tableExists(table->getName())) {
+    auto table_name = table->getName();
+    std::transform(table_name.begin(), table_name.end(), table_name.begin(), ::tolower);
+    if (tableExists(table_name)) {
         throw std::runtime_error(
             fmt::format("table already exists: {}", table->getName())
         );
     }
-    tables_[table->getName()] = std::move(table);
+    tables_[table_name] = std::move(table);
 }
 
 auto Database::dropTable(const std::string& name) -> bool {
-    if (!tableExists(name)) {
+    auto table_name = name;
+    std::transform(table_name.begin(), table_name.end(), table_name.begin(), ::tolower);
+    if (!tableExists(table_name)) {
         return false;
     }
-    tables_.erase(name);
+    tables_.erase(table_name);
     return true;
 }
 
 auto Database::getTable(const std::string& name) const -> TablePtr {
-    auto it = tables_.find(name);
+    auto table_name = name;
+    std::transform(table_name.begin(), table_name.end(), table_name.begin(), ::tolower);
+    auto it = tables_.find(table_name);
     if (it != tables_.end()) return it->second;
     return nullptr;
 }
 
 auto Database::tableExists(const std::string& name) const -> bool {
-    return tables_.find(name) != tables_.end();
+    auto table_name = name;
+    std::transform(table_name.begin(), table_name.end(), table_name.begin(), ::tolower);
+    return tables_.find(table_name) != tables_.end();
 }
 
 auto Database::getName() const -> const std::string& {

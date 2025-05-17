@@ -6,6 +6,7 @@
 #include "Command.hpp"
 #include "CommonTypes.h"
 #include "Value.h"
+#include "Database.h"
 
 class Parser {
 private:
@@ -13,6 +14,7 @@ private:
     std::unordered_map<std::string, void(Parser::*)()> handlers_;
     std::string query_;
     size_t pos_;
+    Database& database_;
 
     struct ParseState {
         CommandType current_command;
@@ -62,7 +64,20 @@ private:
 
     std::unique_ptr<Command> buildCommand();
 public:
-    Parser();
+    explicit Parser(Database& database) : database_(database) {
+        handlers_["SELECT"] = &Parser::handleSelect;
+        handlers_["FROM"] = &Parser::handleFrom;
+        handlers_["WHERE"] = &Parser::handleWhere;
+        handlers_["CREATE"] = &Parser::handleCreate;
+        handlers_["TABLE"] = &Parser::handleTable;
+        handlers_["INSERT"] = &Parser::handleInsert;
+        handlers_["INTO"] = &Parser::handleInto;
+        handlers_["VALUES"] = &Parser::handleValues;
+        handlers_["UPDATE"] = &Parser::handleUpdate;
+        handlers_["SET"] = &Parser::handleSet;
+        handlers_["DELETE"] = &Parser::handleDelete;
+        handlers_["DROP"] = &Parser::handleDrop;
+    }
     std::unique_ptr<Command> parse(const std::string& query);
 };
 
