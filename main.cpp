@@ -10,11 +10,9 @@
 #include "Executor.hpp"
 #include "Database.h"
 
-// Filename for the command log
 const std::string COMMAND_LOG_FILE = "db_commands.log";
 Database* globalDb = nullptr;
 
-// Function to save a command to the log file
 void logCommand(const std::string& command) {
     std::ofstream logFile(COMMAND_LOG_FILE, std::ios::app);
     if (logFile.is_open()) {
