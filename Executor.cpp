@@ -4,11 +4,59 @@
 #include <fmt/format.h>
 #include <fstream>
 #include <map>
+#include <sstream>
 
 #include "Executor.hpp"
 #include "Table.h"
 #include "Parser.hpp"
 #include "data_types.h"
+
+bool Executor::evaluateWhereCondition(const Row& row, const std::string& where_clause) {
+    if (where_clause.empty()) {
+        return true; // No WHERE clause means condition is satisfied
+    }
+
+    // Parse the WHERE clause
+    std::string column_name, operator_str, value_str;
+    std::istringstream iss(where_clause);
+    iss >> column_name >> operator_str >> value_str;
+
+    if (column_name.empty() || operator_str.empty() || value_str.empty()) {
+        throw std::runtime_error("invalid WHERE clause format");
+    }
+    
+    if (!row.hasColumn(column_name)) {
+        return false; // Column doesn't exist in this row
+    }
+
+    // Get the actual value from the row
+    const auto& value = row.getValue(column_name);
+    Value compare_value;
+    
+    // Parse the comparison value
+    try {
+        if (value_str.front() == '\'' || value_str.front() == '"') {
+            compare_value = Value(value_str.substr(1, value_str.length()-2));
+        } else if (value_str == "true" || value_str == "false") {
+            compare_value = Value(value_str == "true");
+        } else if (value_str.find('.') != std::string::npos) {
+            compare_value = Value(std::stod(value_str));
+        } else {
+            compare_value = Value(std::stoi(value_str));
+        }
+    } catch (const std::exception& e) {
+        throw std::runtime_error(fmt::format("error parsing value in WHERE clause: {}", e.what()));
+    }
+
+    // Apply the comparison
+    if (operator_str == "=") return value == compare_value;
+    else if (operator_str == "!=") return value != compare_value;
+    else if (operator_str == "<") return value < compare_value;
+    else if (operator_str == ">") return value > compare_value;
+    else if (operator_str == "<=") return value <= compare_value;
+    else if (operator_str == ">=") return value >= compare_value;
+    else throw std::runtime_error(fmt::format("unsupported operator in WHERE clause: {}", operator_str));
+}
 
 auto Executor::execute(const std::unique_ptr<Command>& command) -> bool {
     if (!command) {
@@ -76,62 +124,17 @@ auto Executor::executeSelect(const SelectCommand& c) -> void {
     const auto& columns = c.getColumnNames();
     const auto& where_clause = c.getWhereClause();
 
-    // Print column headers
     for (const auto& col : columns) {
         fmt::print("{}\t", col);
     }
     fmt::print("\n");
 
-    // Parse WHERE clause if present
-    std::string column_name, operator_str, value_str;
-    if (!where_clause.empty()) {
-        std::istringstream iss(where_clause);
-        iss >> column_name >> operator_str >> value_str;
-        if (column_name.empty() || operator_str.empty() || value_str.empty()) {
-            throw std::runtime_error("invalid WHERE clause format");
-        }
-    }
-
-    // Print data rows
     for (const auto& row : rows) {
-        // Apply WHERE clause filtering
-        if (!where_clause.empty()) {
-            if (!row.hasColumn(column_name)) {
-                continue; // Skip rows that don't have the column we're filtering on
-            }
-
-            const auto& value = row.getValue(column_name);
-            Value compare_value;
-            
-            // Parse the comparison value
-            try {
-                if (value_str.front() == '\'' || value_str.front() == '"') {
-                    compare_value = Value(value_str.substr(1, value_str.length()-2));
-                } else if (value_str == "true" || value_str == "false") {
-                    compare_value = Value(value_str == "true");
-                } else if (value_str.find('.') != std::string::npos) {
-                    compare_value = Value(std::stod(value_str));
-                } else {
-                    compare_value = Value(std::stoi(value_str));
-                }
-            } catch (const std::exception& e) {
-                throw std::runtime_error(fmt::format("error parsing value in WHERE clause: {}", e.what()));
-            }
-
-            // Apply the comparison
-            bool matches = false;
-            if (operator_str == "=") matches = value == compare_value;
-            else if (operator_str == "!=") matches = value != compare_value;
-            else if (operator_str == "<") matches = value < compare_value;
-            else if (operator_str == ">") matches = value > compare_value;
-            else if (operator_str == "<=") matches = value <= compare_value;
-            else if (operator_str == ">=") matches = value >= compare_value;
-            else throw std::runtime_error(fmt::format("unsupported operator in WHERE clause: {}", operator_str));
-
-            if (!matches) continue;
+        if (!where_clause.empty() && !evaluateWhereCondition(row, where_clause)) {
+            continue; // skip rows that don't match the WHERE condition
         }
 
-        // Print the row if it passes the WHERE clause
+        // print the row if it passes the WHERE clause
         for (const auto& col : columns) {
             if (row.hasColumn(col)) {
                 const auto& value = row.getValue(col);
@@ -161,11 +164,9 @@ auto Executor::executeCreate(const CreateCommand& c) -> void {
 
     auto table = std::make_shared<Table>(table_name, c.getColumns());
     
-    // Add any table-level constraints
     for (const auto& constraint : c.getConstraints()) {
         table->addConstraint(constraint);
     }
-    
     database_.addTable(table);
     fmt::println("table '{}' created successfully", table_name);
 }
@@ -232,16 +233,23 @@ auto Executor::executeUpdate(const UpdateCommand& c) -> void {
 
     const auto& updates = c.getColumnValues();
     const auto& where_clause = c.getWhereClause();
+    int updated_count = 0;
 
-    //TODO: where shit
-    auto rows = table->getRows();
-    for (auto& row : rows) {
-        for (const auto& [col_name, value] : updates) {
-            row.setValue(col_name, value);
+    // Process each row directly using the table's row reference
+    for (size_t i = 0; i < table->rowCount(); i++) {
+        Row& row = table->getRow(i);
+        
+        // Apply WHERE clause filtering if present
+        if (evaluateWhereCondition(row, where_clause)) {
+            // Update the row if it matches the WHERE condition
+            for (const auto& [col_name, value] : updates) {
+                row.setValue(col_name, value);
+            }
+            updated_count++;
         }
     }
 
-    fmt::println("successfully updated ({}) row(s) in {}", rows.size(), table_name);
+    fmt::println("successfully updated ({}) row(s) in {}", updated_count, table_name);
 }
 
 auto Executor::executeDelete(const DeleteCommand& c) -> void {
@@ -256,16 +264,45 @@ auto Executor::executeDelete(const DeleteCommand& c) -> void {
     }
 
     const auto& where_clause = c.getWhereClause();
+    
+    // if there's no WHERE, delete all  
+    if (where_clause.empty()) {
+        size_t row_count = table->rowCount();
+        table->clearRows();
+        fmt::println("successfully deleted ({}) row(s) from '{}'", row_count, table_name);
+        return;
+    }
 
-    //TODO: also where shit
-    table->clear();
-    fmt::println("successfully deleted rows from '{}'", table_name);
+    // find rows that match 
+    std::vector<size_t> rows_to_delete;
+    for (size_t i = 0; i < table->rowCount(); i++) {
+        const Row& row = table->getRow(i);
+        if (evaluateWhereCondition(row, where_clause)) {
+            rows_to_delete.push_back(i);
+        }
+    }
+
+    // exclude
+    int deleted_count = 0;
+    RowList new_rows;
+    for (size_t i = 0; i < table->rowCount(); i++) {
+        if (std::find(rows_to_delete.begin(), rows_to_delete.end(), i) == rows_to_delete.end()) {
+            new_rows.push_back(table->getRow(i));
+        } else {
+            deleted_count++;
+        }
+    }
+    table->clearRows();
+    for (const auto& row : new_rows) {
+        table->addRow(row);
+    }
+
+    fmt::println("successfully deleted ({}) row(s) from '{}'", deleted_count, table_name);
 }
 
 auto Executor::executeAlter(const AlterCommand& c) -> void {
     const std::string& table_name = c.getTableName();
     auto table = database_.getTable(table_name);
-    
     if (!table) {
         throw std::runtime_error(fmt::format("table '{}' doesn't exist", table_name));
     }
@@ -318,25 +355,21 @@ auto Executor::executeSave(const SaveCommand& c) -> void {
     if (filename.empty()) {
         throw std::runtime_error("filename cannot be empty");
     }
-    
-    // Save all commands that would rebuild the current database state
+
     std::ofstream file(filename);
     if (!file.is_open()) {
         throw std::runtime_error(fmt::format("failed to open file '{}' for saving", filename));
     }
-    
-    // First write the database creation commands (tables, columns)
+
     for (const auto& tableName : database_.getTableNames()) {
         auto table = database_.getTable(tableName);
-        
-        // Generate CREATE TABLE command
+
         std::string createCmd = fmt::format("CREATE TABLE {} (", tableName);
         const auto& columns = table->getColumns();
-        
+
         for (size_t i = 0; i < columns.size(); ++i) {
             const auto& col = columns[i];
             std::string typeStr;
-            
             switch (col.getType()) {
                 case DataType::INTEGER:
                     typeStr = "INTEGER";
@@ -351,18 +384,17 @@ auto Executor::executeSave(const SaveCommand& c) -> void {
                     typeStr = "BOOLEAN";
                     break;
                 default:
-                    typeStr = "INTEGER"; // Default fallback
+                    typeStr = "INTEGER";
             }
-            
+
             createCmd += fmt::format("{} {}", col.getName(), typeStr);
-            
-            // Add column constraints
+
             bool isPrimaryKey = false;
             bool isUnique = false;
             bool isNotNull = false;
             Value defaultValue;
             bool hasDefault = false;
-            
+
             for (const auto& constraint : col.getConstraints()) {
                 if (constraint->getType() == ConstraintType::PRIMARY_KEY) {
                     isPrimaryKey = true;
@@ -543,9 +575,9 @@ auto Executor::executeHelp(const HelpCommand& c) -> void {
                "  - Lists tables in the database or columns in a table\n"
                "  - Example: SHOW COLUMNS FROM employees"},
                
-        {"SAVE", "SAVE TO 'filename'\n"
+        {"SAVE", "SAVE 'filename'\n"
                "  - Saves the database to a file\n"
-               "  - Example: SAVE TO 'my_database.db'"},
+               "  - Example: SAVE 'my_database.db'"},
                
         {"LOAD", "LOAD FROM 'filename'\n"
                "  - Loads a database from a file\n"

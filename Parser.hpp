@@ -65,6 +65,7 @@ private:
     void handleSet();
     void handleDelete();
     void handleDrop();
+    void handleAlter();
     void handleShow();
     void handleSave();
     void handleLoad();
@@ -85,6 +86,7 @@ public:
         handlers_["SET"] = &Parser::handleSet;
         handlers_["DELETE"] = &Parser::handleDelete;
         handlers_["DROP"] = &Parser::handleDrop;
+        handlers_["ALTER"] = &Parser::handleAlter;
         handlers_["SHOW"] = &Parser::handleShow;
         handlers_["SAVE"] = &Parser::handleSave;
         handlers_["LOAD"] = &Parser::handleLoad;

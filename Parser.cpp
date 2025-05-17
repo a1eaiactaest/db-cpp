@@ -485,13 +485,91 @@ auto Parser::handleDelete() -> void {
 }
 
 auto Parser::handleDrop() -> void {
+    auto token = findNextToken();
+    if (token != "TABLE") {
+        throw std::runtime_error("expected TABLE after DROP");
+    }
+    
     state_.current_command = CommandType::DROP;
-    auto tok = findNextToken();
-    if (tok == "TABLE") {
-        state_.current_table_name = findNextToken();
+    state_.current_table_name = findNextToken();
+}
+
+auto Parser::handleAlter() -> void {
+    state_.current_command = CommandType::ALTER;
+    auto token = findNextToken();
+    
+    if (token != "TABLE") {
+        throw std::runtime_error("expected TABLE after ALTER");
+    }
+    
+    state_.current_table_name = findNextToken();
+    if (state_.current_table_name.empty()) {
+        throw std::runtime_error("table name cannot be empty");
+    }
+    
+    // Check if table exists
+    auto table = database_.getTable(state_.current_table_name);
+    if (!table) {
+        throw std::runtime_error(fmt::format("table '{}' does not exist", state_.current_table_name));
+    }
+    
+    auto action = findNextToken();
+    if (action == "ADD") {
+        std::string column_name = findNextToken();
+        if (column_name.empty()) {
+            throw std::runtime_error("column name cannot be empty");
+        }
+        
+        std::string type_str = findNextToken();
+        if (type_str.empty()) {
+            throw std::runtime_error("column type cannot be empty");
+        }
+        
+        try {
+            auto type = stringToDataType(type_str);
+            Column new_column(column_name, type);
+            state_.current_columns_def.push_back(std::move(new_column));
+        } catch (const std::exception& e) {
+            throw std::runtime_error(fmt::format("invalid data type: {}", type_str));
+        }
+    } else if (action == "DROP") {
+        auto token = findNextToken();
+        if (token == "COLUMN") {
+            std::string column_name = findNextToken();
+            if (column_name.empty()) {
+                throw std::runtime_error("column name cannot be empty");
+            }
+            
+            // Store the column name in current_columns_names
+            state_.current_columns_names.push_back(column_name);
+        } else {
+            throw std::runtime_error("expected COLUMN after DROP");
+        }
+    } else if (action == "RENAME") {
+        auto token = findNextToken();
+        if (token == "COLUMN") {
+            std::string old_column_name = findNextToken();
+            if (old_column_name.empty()) {
+                throw std::runtime_error("old column name cannot be empty");
+            }
+            
+            token = findNextToken();
+            if (token != "TO") {
+                throw std::runtime_error("expected TO after column name");
+            }
+            
+            std::string new_column_name = findNextToken();
+            if (new_column_name.empty()) {
+                throw std::runtime_error("new column name cannot be empty");
+            }
+            
+            // Store both names
+            state_.current_columns_names = {old_column_name, new_column_name};
+        } else {
+            throw std::runtime_error("expected COLUMN after RENAME");
+        }
     } else {
-        // If "TABLE" keyword is omitted, use the token as table name
-        state_.current_table_name = tok;
+        throw std::runtime_error(fmt::format("unsupported ALTER action: {}", action));
     }
 }
 
@@ -600,6 +678,29 @@ auto Parser::buildCommand() -> std::unique_ptr<Command> {
             }
         case CommandType::HELP:
             return std::make_unique<HelpCommand>(state_.help_command);
+        case CommandType::ALTER:
+            if (!state_.current_columns_def.empty()) {
+                // ADD column case
+                return std::make_unique<AlterCommand>(
+                    state_.current_table_name, 
+                    state_.current_columns_def[0]
+                );
+            } else if (state_.current_columns_names.size() == 1) {
+                // DROP column case
+                return std::make_unique<AlterCommand>(
+                    state_.current_table_name,
+                    state_.current_columns_names[0]
+                );
+            } else if (state_.current_columns_names.size() == 2) {
+                // RENAME column case
+                return std::make_unique<AlterCommand>(
+                    state_.current_table_name,
+                    state_.current_columns_names[0],
+                    state_.current_columns_names[1]
+                );
+            } else {
+                throw std::runtime_error("invalid ALTER command state");
+            }
         default:
             return nullptr;
     }

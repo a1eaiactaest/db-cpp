@@ -1,7 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <fstream>
+#include "Command.hpp"
 #include "Commands.hpp"
 #include "Database.h"
 #include "Parser.hpp"
@@ -21,6 +23,8 @@ private:
     void executeLoad(const LoadCommand& command);
     void executeShow(const ShowCommand& command);
     void executeHelp(const HelpCommand& command);
+
+    bool evaluateWhereCondition(const Row& row, const std::string& where_clause);
 
 public:
     explicit Executor(Database& database) : database_(database) {}
