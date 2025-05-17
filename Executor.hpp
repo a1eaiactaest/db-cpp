@@ -1,7 +1,10 @@
 #pragma once
 
+#include <string>
+#include <fstream>
 #include "Commands.hpp"
 #include "Database.h"
+#include "Parser.hpp"
 
 class Executor {
 private:

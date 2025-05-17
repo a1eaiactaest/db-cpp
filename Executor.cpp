@@ -2,9 +2,12 @@
 #include <fmt/base.h>
 #include <fmt/ostream.h>
 #include <fmt/format.h>
+#include <fstream>
 
 #include "Executor.hpp"
 #include "Table.h"
+#include "Parser.hpp"
+#include "data_types.h"
 
 auto Executor::execute(const std::unique_ptr<Command>& command) -> void {
     if (!command) {
@@ -65,16 +68,75 @@ auto Executor::executeSelect(const SelectCommand& c) -> void {
 
     auto rows = table->getRows();
     const auto& columns = c.getColumnNames();
+    const auto& where_clause = c.getWhereClause();
+
+    // Print column headers
     for (const auto& col : columns) {
         fmt::print("{}\t", col);
     }
     fmt::print("\n");
 
+    // Parse WHERE clause if present
+    std::string column_name, operator_str, value_str;
+    if (!where_clause.empty()) {
+        fmt::print("Parsing WHERE clause: {}\n", where_clause);
+        std::istringstream iss(where_clause);
+        iss >> column_name >> operator_str >> value_str;
+        if (column_name.empty() || operator_str.empty() || value_str.empty()) {
+            throw std::runtime_error("invalid WHERE clause format");
+        }
+        fmt::print("Parsed WHERE clause: column={}, operator={}, value={}\n", 
+            column_name, operator_str, value_str);
+    }
+
+    // Print data rows
     for (const auto& row : rows) {
+        // Apply WHERE clause filtering
+        if (!where_clause.empty()) {
+            if (!row.hasColumn(column_name)) {
+                fmt::print("Row does not have column: {}\n", column_name);
+                continue;
+            }
+
+            const auto& value = row.getValue(column_name);
+            Value compare_value;
+            
+            // Parse the comparison value
+            if (value_str.front() == '\'' || value_str.front() == '"') {
+                compare_value = Value(value_str.substr(1, value_str.length()-2));
+            } else if (value_str == "true" || value_str == "false") {
+                compare_value = Value(value_str == "true");
+            } else if (value_str.find('.') != std::string::npos) {
+                compare_value = Value(std::stod(value_str));
+            } else {
+                compare_value = Value(std::stoi(value_str));
+            }
+
+            fmt::print("Comparing: {} {} {}\n", value.toString(), operator_str, compare_value.toString());
+
+            // Apply the comparison
+            bool matches = false;
+            if (operator_str == "=") matches = value == compare_value;
+            else if (operator_str == "!=") matches = value != compare_value;
+            else if (operator_str == "<") matches = value < compare_value;
+            else if (operator_str == ">") matches = value > compare_value;
+            else if (operator_str == "<=") matches = value <= compare_value;
+            else if (operator_str == ">=") matches = value >= compare_value;
+            else throw std::runtime_error(fmt::format("unsupported operator in WHERE clause: {}", operator_str));
+
+            fmt::print("Match result: {}\n", matches);
+            if (!matches) continue;
+        }
+
+        // Print the row if it passes the WHERE clause
         for (const auto& col : columns) {
-            const auto& value = row.getValue(col);
-            if (!value.isNull()) {
-                fmt::print("{}\t", value.toString());
+            if (row.hasColumn(col)) {
+                const auto& value = row.getValue(col);
+                if (!value.isNull()) {
+                    fmt::print("{}\t", value.toString());
+                } else {
+                    fmt::print("NULL\t");
+                }
             } else {
                 fmt::print("NULL\t");
             }
@@ -86,11 +148,21 @@ auto Executor::executeSelect(const SelectCommand& c) -> void {
 auto Executor::executeCreate(const CreateCommand& c) -> void {
     const std::string& table_name = c.getTableName();
 
+    if (table_name.empty()) {
+        throw std::runtime_error("table name cannot be empty");
+    }
+
     if (database_.tableExists(table_name)) {
         throw std::runtime_error(fmt::format("table '{}' already exists", table_name));
     }
 
     auto table = std::make_shared<Table>(table_name, c.getColumns());
+    
+    // Add any table-level constraints
+    for (const auto& constraint : c.getConstraints()) {
+        table->addConstraint(constraint);
+    }
+    
     database_.addTable(table);
     fmt::println("table '{}' created successfully", table_name);
 }
@@ -239,16 +311,163 @@ auto Executor::executeAlter(const AlterCommand& c) -> void {
 
 auto Executor::executeSave(const SaveCommand& c) -> void {
     const std::string& filename = c.getFilename();
-    // TODO: implement actual file saving logic
-    // think of the best way to serialize db state
-    fmt::println("saving database state to '{}'", filename);
+    
+    if (filename.empty()) {
+        throw std::runtime_error("filename cannot be empty");
+    }
+    
+    // Save all commands that would rebuild the current database state
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error(fmt::format("failed to open file '{}' for saving", filename));
+    }
+    
+    // First write the database creation commands (tables, columns)
+    for (const auto& tableName : database_.getTableNames()) {
+        auto table = database_.getTable(tableName);
+        
+        // Generate CREATE TABLE command
+        std::string createCmd = fmt::format("CREATE TABLE {} (", tableName);
+        const auto& columns = table->getColumns();
+        
+        for (size_t i = 0; i < columns.size(); ++i) {
+            const auto& col = columns[i];
+            std::string typeStr;
+            
+            switch (col.getType()) {
+                case DataType::INTEGER:
+                    typeStr = "INTEGER";
+                    break;
+                case DataType::FLOAT:
+                    typeStr = "FLOAT";
+                    break;
+                case DataType::STRING:
+                    typeStr = "STRING";
+                    break;
+                case DataType::BOOLEAN:
+                    typeStr = "BOOLEAN";
+                    break;
+                default:
+                    typeStr = "INTEGER"; // Default fallback
+            }
+            
+            createCmd += fmt::format("{} {}", col.getName(), typeStr);
+            
+            // Add column constraints
+            bool isPrimaryKey = false;
+            bool isUnique = false;
+            bool isNotNull = false;
+            Value defaultValue;
+            bool hasDefault = false;
+            
+            for (const auto& constraint : col.getConstraints()) {
+                if (constraint->getType() == ConstraintType::PRIMARY_KEY) {
+                    isPrimaryKey = true;
+                } else if (constraint->getType() == ConstraintType::UNIQUE) {
+                    isUnique = true;
+                } else if (constraint->getType() == ConstraintType::NOT_NULL) {
+                    isNotNull = true;
+                } else if (constraint->getType() == ConstraintType::DEFAULT) {
+                    auto defConstraint = std::dynamic_pointer_cast<DefaultConstraint>(constraint);
+                    if (defConstraint) {
+                        defaultValue = defConstraint->getDefaultValue();
+                        hasDefault = true;
+                    }
+                }
+            }
+
+            // add constraints in order: PRIMARY KEY, UNIQUE, NOT NULL, DEFAULT
+            if (isPrimaryKey) {
+                createCmd += " PRIMARY KEY";
+            } 
+            if (isUnique && !isPrimaryKey) { // PRIMARY KEY implies UNIQUE
+                createCmd += " UNIQUE";
+            }
+            if (isNotNull) {
+                createCmd += " NOT NULL";
+            }
+            if (hasDefault) {
+                if (defaultValue.getType() == DataType::STRING) {
+                    createCmd += fmt::format(" DEFAULT '{}'", defaultValue.toString());
+                } else {
+                    createCmd += fmt::format(" DEFAULT {}", defaultValue.toString());
+                }
+            }
+            
+            if (i < columns.size() - 1) {
+                createCmd += ", ";
+            }
+        }
+        createCmd += ")";
+        file << createCmd << std::endl;
+
+        // generate inserts for all rows
+        const auto& rows = table->getRows();
+        for (const auto& row : rows) {
+            const auto& values = row.getValues();
+            if (values.empty()) continue;
+
+            std::string insert_cmd = fmt::format("INSERT INTO {} VALUES (", tableName);
+
+            size_t i = 0;
+            for (const auto& [colName, val] : values) {
+                if (val.getType() == DataType::STRING) {
+                    insert_cmd += fmt::format("'{}'", val.toString());
+                } else {
+                    insert_cmd+= val.toString();
+                }
+
+                if (i < values.size() - 1) {
+                    insert_cmd+= ", ";
+                }
+                ++i;
+            }
+            insert_cmd += ")";
+            file << insert_cmd << std::endl;
+        }
+    }
+    
+    file.close();
+    fmt::println("database state saved as commands to '{}'", filename);
 }
 
 auto Executor::executeLoad(const LoadCommand& c) -> void {
     const std::string& filename = c.getFilename();
-    // TODO: Implement actual file loading logic
-    // the same thing but deserialization
-    fmt::println("loading database state from '{}'", filename);
+
+    if (filename.empty()) {
+        throw std::runtime_error("filename cannot be empty");
+    }
+
+    // read commands from file and execute them
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error(fmt::format("failed to open file '{}' for loading", filename));
+    }
+    database_.clear();
+
+    std::string line;
+    while (std::getline(file, line)) {
+        if (!line.empty()) {
+            try {
+                Parser parser(database_);
+                auto command = parser.parse(line);
+                if (command) {
+                    // skip SAVE and LOAD commands, avoids recursion
+                    if (command->getType() != CommandType::SAVE && 
+                        command->getType() != CommandType::LOAD) {
+                        execute(command);
+                    }
+                } else {
+                    fmt::print(std::cerr, "warning: failed to parse command: {}\n", line);
+                }
+            } catch (const std::exception& e) {
+                fmt::print(std::cerr, "warning: error executing command '{}': {}\n", line, e.what());
+            }
+        }
+    }
+
+    file.close();
+    fmt::println("database state loaded from '{}'", filename);
 }
 
 auto Executor::executeShow(const ShowCommand& c) -> void {

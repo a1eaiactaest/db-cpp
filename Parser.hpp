@@ -26,6 +26,7 @@ private:
         std::string where_clause;
         std::vector<Column> current_columns_def;
         ConstraintList current_constraints;
+        std::string filename; // For SAVE and LOAD commands
 
         auto reset () -> void {
             current_command = CommandType::UNKNOWN; // by default
@@ -37,6 +38,7 @@ private:
             where_clause.clear();
             current_columns_def.clear();
             current_constraints.clear();
+            filename.clear();
         }
     } state_;
 
@@ -61,6 +63,9 @@ private:
     void handleSet();
     void handleDelete();
     void handleDrop();
+    void handleShow();
+    void handleSave();
+    void handleLoad();
 
     std::unique_ptr<Command> buildCommand();
 public:
@@ -77,6 +82,9 @@ public:
         handlers_["SET"] = &Parser::handleSet;
         handlers_["DELETE"] = &Parser::handleDelete;
         handlers_["DROP"] = &Parser::handleDrop;
+        handlers_["SHOW"] = &Parser::handleShow;
+        handlers_["SAVE"] = &Parser::handleSave;
+        handlers_["LOAD"] = &Parser::handleLoad;
     }
     std::unique_ptr<Command> parse(const std::string& query);
 };

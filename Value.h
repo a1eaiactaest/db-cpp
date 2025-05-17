@@ -52,6 +52,30 @@ public:
     bool operator!=(const Value& o) const {
         return !(*this == o);
     }
+
+    bool operator<(const Value& o) const {
+        if (isNull() || o.isNull()) return false;
+        return std::visit([](const auto& a, const auto& b) -> bool {
+            using A = std::decay_t<decltype(a)>;
+            using B = std::decay_t<decltype(b)>;
+            if constexpr (std::is_same_v<A, B>) {
+                return a < b;
+            }
+            throw std::runtime_error("cannot compare values of different types");
+        }, value, o.value);
+    }
+
+    bool operator>(const Value& o) const {
+        return o < *this;
+    }
+
+    bool operator<=(const Value& o) const {
+        return !(o < *this);
+    }
+
+    bool operator>=(const Value& o) const {
+        return !(*this < o);
+    }
 };
 
 #endif //VALUE_H

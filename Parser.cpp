@@ -4,6 +4,18 @@
 #include "Table.h"
 #include <fmt/core.h>
 
+static auto isString(const std::string& value) -> bool {
+    return !value.empty() && (value.front() == '\'' || value.front() == '"');
+}
+
+static auto isBool(const std::string& value) -> bool {
+    return value == "true" || value == "false";
+}
+
+static auto isDouble(const std::string& value) -> bool {
+    return value.find('.') != std::string::npos;
+}
+
 auto Parser::parse(const std::string& query) -> std::unique_ptr<Command> {
     query_ = query;
     pos_ = 0;
@@ -103,20 +115,34 @@ auto Parser::handleFrom() -> void {
                 state_.current_table_name = tok;
             }
         }
+
+        // if we have a * in the column list, replace it with all column names
+        if (!state_.current_tables_names.empty() && 
+            state_.current_columns_names.size() == 1 && 
+            state_.current_columns_names[0] == "*") {
+            
+            fmt::print("Looking up table: {}\n", state_.current_table_name);
+            auto table = database_.getTable(state_.current_table_name);
+            if (table) {
+                fmt::print("Found table, getting columns\n");
+                state_.current_columns_names.clear();
+                for (const auto& col : table->getColumns()) {
+                    fmt::print("Adding column: {}\n", col.getName());
+                    state_.current_columns_names.push_back(col.getName());
+                }
+            } else {
+                throw std::runtime_error(fmt::format("table '{}' not found", state_.current_table_name));
+            }
+        }
     }
 }
 
 auto Parser::handleWhere() -> void {
-    std::ostringstream where_clause_os;
-    while (pos_ < query_.length()) {
-        std::string tok = findNextToken();
-        if (tok.empty() || tok == ";") break;
-        where_clause_os << tok << " ";
-    }
-    state_.where_clause = where_clause_os.str();
-    if (state_.where_clause.empty()) {
-        state_.where_clause.pop_back();
-    }
+    std::string column_name = findNextToken();
+    std::string operator_str = findNextToken();
+    std::string value_str = findNextToken();
+
+    state_.where_clause = fmt::format("{} {} {}", column_name, operator_str, value_str);
 }
 
 auto Parser::handleCreate() -> void {
@@ -126,6 +152,11 @@ auto Parser::handleCreate() -> void {
 auto Parser::handleTable() -> void {
     if (state_.current_command == CommandType::CREATE) {
         state_.current_table_name = findNextToken();
+        
+        // Check if table name is empty
+        if (state_.current_table_name.empty()) {
+            throw std::runtime_error("table name cannot be empty");
+        }
         
         // Expect opening parenthesis for column definitions
         auto tok = findNextToken();
@@ -160,13 +191,107 @@ auto Parser::handleTable() -> void {
 
             // Create column and add it to the list
             Column col(col_name, type);
+            
+            // Check for any constraints for this column
+            bool done = false;
+            while (!done) {
+                auto constraint_tok = findNextToken();
+                
+                if (constraint_tok.empty()) {
+                    done = true;
+                } else if (constraint_tok == ",") {
+                    // End of this column definition
+                    done = true;
+                } else if (constraint_tok == ")") {
+                    // End of all column definitions
+                    pos_--; // Push back the token so it's read again in the outer loop
+                    done = true;
+                } else {
+                    // Parse constraint
+                    std::string upper_constraint = constraint_tok;
+                    std::transform(upper_constraint.begin(), upper_constraint.end(), 
+                                  upper_constraint.begin(), ::toupper);
+                    
+                    if (upper_constraint == "NOT" || upper_constraint == "NOT NULL") {
+                        // Handle NOT NULL constraint
+                        if (upper_constraint == "NOT") {
+                            // Look for NULL keyword
+                            auto null_tok = findNextToken();
+                            std::string upper_null = null_tok;
+                            std::transform(upper_null.begin(), upper_null.end(), 
+                                          upper_null.begin(), ::toupper);
+                            
+                            if (upper_null != "NULL") {
+                                throw std::runtime_error("expected NULL after NOT");
+                            }
+                        }
+                        
+                        auto constraint = std::make_shared<NotNullConstraint>(
+                            ConstraintType::NOT_NULL, 
+                            col_name + "_not_null", 
+                            col_name);
+                        col.addConstraint(constraint);
+                        state_.current_constraints.push_back(constraint);
+                    } else if (upper_constraint == "UNIQUE") {
+                        // Handle UNIQUE constraint
+                        auto constraint = std::make_shared<UniqueConstraint>(
+                            col_name + "_unique", 
+                            std::vector<std::string>{col_name});
+                        col.addConstraint(constraint);
+                        state_.current_constraints.push_back(constraint);
+                    } else if (upper_constraint == "PRIMARY" || upper_constraint == "PRIMARY KEY" || upper_constraint == "PK") {
+                        // Handle PRIMARY KEY constraint
+                        if (upper_constraint == "PRIMARY") {
+                            // Look for KEY keyword
+                            auto key_tok = findNextToken();
+                            std::string upper_key = key_tok;
+                            std::transform(upper_key.begin(), upper_key.end(), 
+                                         upper_key.begin(), ::toupper);
+                            
+                            if (upper_key != "KEY") {
+                                throw std::runtime_error("expected KEY after PRIMARY");
+                            }
+                        }
+                        
+                        auto constraint = std::make_shared<PrimaryKeyConstraint>(
+                            col_name + "_pk", 
+                            std::vector<std::string>{col_name});
+                        col.addConstraint(constraint);
+                        state_.current_constraints.push_back(constraint);
+                    } else if (upper_constraint == "DEFAULT") {
+                        // Handle DEFAULT value constraint
+                        auto value_tok = findNextToken();
+                        Value default_value;
+                        
+                        if (isString(value_tok)) {
+                            default_value = Value(value_tok.substr(1, value_tok.length() - 2));
+                        } else if (isBool(value_tok)) {
+                            default_value = Value(value_tok == "true");
+                        } else if (isDouble(value_tok)) {
+                            default_value = Value(std::stod(value_tok));
+                        } else {
+                            // Assume integer
+                            default_value = Value(std::stoi(value_tok));
+                        }
+                        
+                        auto constraint = std::make_shared<DefaultConstraint>(
+                            col_name + "_default", 
+                            col_name, 
+                            default_value);
+                        col.addConstraint(constraint);
+                        state_.current_constraints.push_back(constraint);
+                    } else {
+                        throw std::runtime_error(fmt::format("unknown constraint: {}", constraint_tok));
+                    }
+                }
+            }
+            
             state_.current_columns_def.push_back(col);
 
-            // Check for next column or end of definition
-            tok = findNextToken();
-            if (tok == ")") break;
-            if (tok != ",") {
-                throw std::runtime_error("expected ',' or ')' after column definition");
+            // If we ended on a ')', we're done with column definitions
+            if (pos_ < query_.length() && query_[pos_] == ')') {
+                findNextToken(); // Consume the ')'
+                break;
             }
         }
     }
@@ -195,19 +320,6 @@ auto Parser::handleInto() -> void {
             }
         }
     }
-}
-
-// helpers, not sure if they will be sufficient
-auto isString(std::string& value) -> bool {
-    return value.front() == '\'' || value.front() == '"';
-}
-
-auto isBool(std::string& value) -> bool {
-    return value == "true" || value == "false";
-}
-
-auto isDouble(std::string& value) -> bool {
-    return value.find('.') != std::string::npos;
 }
 
 auto Parser::handleValues() -> void{
@@ -251,9 +363,9 @@ auto Parser::handleValues() -> void{
                 value_sets.push_back(current_set);
             }
         } else if (tok == ",") {
-            // Skip commas, delete this later
+            // skip commas, delete this later
         } else {
-            // Parse the value
+            // parse the value
             if (isString(tok)) {
                 current_set.push_back(Value(tok.substr(1, tok.length()-2)));
             } else if (isBool(tok)) {
@@ -265,7 +377,6 @@ auto Parser::handleValues() -> void{
             }
         }
 
-        // Check for end of statement
         if (tok == ";" || pos_ >= query_.length()) {
             break;
         }
@@ -345,6 +456,45 @@ auto Parser::handleDrop() -> void {
     state_.current_command = CommandType::DROP;
 }
 
+auto Parser::handleShow() -> void {
+    state_.current_command = CommandType::SHOW;
+    auto tok = findNextToken();
+    if (tok == "TABLES") {
+        state_.current_command = CommandType::SHOW;
+    } else if (tok == "COLUMNS") {
+        tok = findNextToken(); // skip FROM
+        if (tok == "FROM") {
+            state_.current_table_name = findNextToken();
+        }
+    }
+}
+
+auto Parser::handleSave() -> void {
+    state_.current_command = CommandType::SAVE;
+    std::string filename = findNextToken();
+
+    if (!filename.empty() && (filename.front() == '\'' || filename.front() == '"')) {
+        if (filename.size() >= 2 && (filename.back() == '\'' || filename.back() == '"')) {
+            // remove surrounding quotes
+            filename = filename.substr(1, filename.size() - 2);
+        }
+    }
+    state_.filename = filename;
+}
+
+auto Parser::handleLoad() -> void {
+    state_.current_command = CommandType::LOAD;
+    std::string filename = findNextToken();
+
+    if (!filename.empty() && (filename.front() == '\'' || filename.front() == '"')) {
+        if (filename.size() >= 2 && (filename.back() == '\'' || filename.back() == '"')) {
+            filename = filename.substr(1, filename.size() - 2);
+        }
+    }
+    
+    state_.filename = filename;
+}
+
 auto Parser::resetState() -> void {
     state_ = ParseState();
 }
@@ -388,6 +538,16 @@ auto Parser::buildCommand() -> std::unique_ptr<Command> {
                 state_.current_table_name,
                 state_.where_clause
             );
+        case CommandType::SAVE:
+            return std::make_unique<SaveCommand>(state_.filename);
+        case CommandType::LOAD:
+            return std::make_unique<LoadCommand>(state_.filename);
+        case CommandType::SHOW:
+            if (state_.current_table_name.empty()) {
+                return std::make_unique<ShowCommand>(ShowCommand::ShowType::TABLES);
+            } else {
+                return std::make_unique<ShowCommand>(state_.current_table_name);
+            }
         default:
             return nullptr;
     }

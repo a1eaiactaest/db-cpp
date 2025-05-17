@@ -10,8 +10,16 @@ private:
     std::string name_;
     TablePtrMap tables_;
 public:
-    Database(std::string name) : name_(name) {};
-    Database(std::string& name) : name_(std::move(name)) {};
+    Database(std::string name) : name_(name) {
+        if (name_.empty()) {
+            throw std::runtime_error("database name cannot be empty");
+        }
+    };
+    Database(std::string& name) : name_(std::move(name)) {
+        if (name_.empty()) {
+            throw std::runtime_error("database name cannot be empty");
+        }
+    };
     ~Database() = default;
 
     void addTable(TablePtr table);

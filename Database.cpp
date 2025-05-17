@@ -46,6 +46,9 @@ auto Database::getName() const -> const std::string& {
 }
 
 auto Database::setName(std::string new_name) -> void {
+    if (new_name.empty()) {
+        throw std::runtime_error("database name cannot be empty");
+    }
     name_ = std::move(new_name);
 }
 
@@ -63,7 +66,7 @@ auto Database::validateRow(const std::string& table_name, const Row& row) -> boo
 
     if (!table) return false;
     if (!table->validateRow(row)) return false; // not sure if this is neccessary but lets leave it like that for now.
-    
+
     // check db-level constraints
     for (const auto& constraint : table->getConstraints()) {
         if (constraint->getType() == ConstraintType::FOREIGN_KEY) {

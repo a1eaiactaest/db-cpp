@@ -39,24 +39,32 @@ auto PrimaryKeyConstraint::validate(const Row& row, const Table& table, const Da
 }
 
 auto PrimaryKeyConstraint::validate(const Row& row, const Table& table) const -> bool {
-    // all columns from pk exist in row and cant be null
+    // all columns from pk must exist in row and can't be null
     for (const auto& col_name : column_names) {
-        if (!row.hasColumn(col_name)) return false;
-        if (row.getValue(col_name).isNull()) return false;
+        if (!row.hasColumn(col_name)) {
+            return false;
+        }
+        if (row.getValue(col_name).isNull()) {
+            return false;  // primary key columns cannot be null
+        }
     }
 
-    // values in the columns are unique across all rows in the table
     for (const auto& existing_row : table.getRows()) {
-        bool all_equal = true;
+        bool matches = true;
         for (const auto& col_name : column_names) {
-            if (existing_row.getValue(col_name) != row.getValue(col_name)) {
-                all_equal = false;
+            if (!existing_row.hasColumn(col_name) || 
+                existing_row.getValue(col_name) != row.getValue(col_name)) {
+                matches = false;
                 break;
             }
         }
-        if (all_equal) return false;
+        // if all columns match, we have a duplicate - primary key constraint violated
+        if (matches) {
+            return false;
+        }
     }
-    return true;
+
+    return true;  
 }
 
 auto ForeignKeyConstraint::validate(const Row& row, const Table& table) const -> bool {
@@ -110,25 +118,36 @@ auto UniqueConstraint::toString() const -> std::string {
 }
 
 auto UniqueConstraint::validate(const Row& row, const Table& table) const -> bool {
-    return validate(row, table, Database(""));
-}
-
-auto UniqueConstraint::validate(const Row& row, const Table& table, const Database& base) const -> bool {
     for (const auto& col_name : column_names) {
-        if (!row.hasColumn(col_name)) return false;
+        if (!row.hasColumn(col_name)) {
+            return false;
+        }
+        if (row.getValue(col_name).isNull()) {
+            return true;  // null values don't violate uniqueness
+        }
     }
 
     for (const auto& existing_row : table.getRows()) {
-        bool all_equal = true;
+        bool matches = true;
+
         for (const auto& col_name : column_names) {
-            if (existing_row.getValue(col_name) != row.getValue(col_name)) {
-                all_equal = false;
+            if (!existing_row.hasColumn(col_name) || 
+                existing_row.getValue(col_name).isNull() ||
+                existing_row.getValue(col_name) != row.getValue(col_name)) {
+                matches = false;
                 break;
             }
         }
-        if (all_equal) return false;
+        // if all columns match, we have a duplicate
+        if (matches) {
+            return false;  
+        }
     }
-    return true;
+    return true;  // no dups
+}
+
+auto UniqueConstraint::validate(const Row& row, const Table& table, const Database& base) const -> bool {
+    return validate(row, table);
 }
 
 auto NotNullConstraint::getColumnName() const -> const std::string& {

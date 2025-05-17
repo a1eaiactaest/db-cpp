@@ -13,8 +13,15 @@
 #include "Table.h"
 #include "Column.h"
 
-Table::Table(std::string name) : name_(std::move(name)) {}
+Table::Table(std::string name) : name_(std::move(name)) {
+    if (name_.empty()) {
+        throw std::runtime_error("table name cannot be empty");
+    }
+}
 Table::Table(const std::string& name, const std::vector<Column>& columns) : name_(name), columns_(columns) {
+    if (name_.empty()) {
+        throw std::runtime_error("table name cannot be empty");
+    }
     for (int i = 0; i < columns_.size(); i++) {
         column_index_map_[columns_[i].getName()] = i;
     }
@@ -94,6 +101,9 @@ auto Table::getConstraintsOfType(ConstraintType t) const -> ConstraintList {
 auto Table::getName() const -> const std::string& { return name_; }
 
 auto Table::setName(std::string new_name) -> void {
+    if (new_name.empty()) {
+        throw std::runtime_error("table name cannot be empty");
+    }
     name_ = std::move(new_name);
 }
 
