@@ -55,3 +55,4 @@ tasks.xml
 # misc
 .cache
 .DS_Store
+*.log
