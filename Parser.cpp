@@ -109,7 +109,12 @@ auto Parser::handleFrom() -> void {
     if (state_.current_command == CommandType::SELECT) {
         while (pos_ < query_.length()) {
             auto tok = findNextToken();
-            if (tok.empty() || tok == "WHERE" || tok == ";") break;
+            if (tok.empty() || tok == ";") break;
+            // if WHERE is found, process the WHERE clause and then break
+            if (tok == "WHERE") {
+                handleWhere();
+                break;
+            }
             if (tok != ",") {
                 state_.current_tables_names.push_back(tok);
                 state_.current_table_name = tok;
