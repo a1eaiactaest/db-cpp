@@ -13,6 +13,7 @@ enum class CommandType {
     SAVE,
     LOAD,
     SHOW,
+    HELP,
     UNKNOWN
 };
 

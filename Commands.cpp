@@ -232,3 +232,11 @@ auto ShowCommand::toString() const -> std::string {
     }
 }
 
+auto HelpCommand::toString() const -> std::string {
+    if (hasSpecificCommand()) {
+        return fmt::format("HELP {}", command_name_);
+    } else {
+        return "HELP";
+    }
+}
+

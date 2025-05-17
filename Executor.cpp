@@ -3,16 +3,17 @@
 #include <fmt/ostream.h>
 #include <fmt/format.h>
 #include <fstream>
+#include <map>
 
 #include "Executor.hpp"
 #include "Table.h"
 #include "Parser.hpp"
 #include "data_types.h"
 
-auto Executor::execute(const std::unique_ptr<Command>& command) -> void {
+auto Executor::execute(const std::unique_ptr<Command>& command) -> bool {
     if (!command) {
         fmt::print(std::cerr, "err: null command recieved");
-        return;
+        return false;
     }
 
     try {
@@ -46,12 +47,17 @@ auto Executor::execute(const std::unique_ptr<Command>& command) -> void {
             case CommandType::SHOW:
                 executeShow(static_cast<const ShowCommand&>(*command));
                 break;
+            case CommandType::HELP:
+                executeHelp(static_cast<const HelpCommand&>(*command));
+                break;
             default:
                 std::cerr << "err: unsupported command type" << std::endl;
-                break;
+                return false;
         }
+        return true;
     } catch (const std::exception& e) {
         fmt::print(std::cerr, "error executing command: {}", e.what());
+        return false;
     }
 }
 
@@ -494,6 +500,82 @@ auto Executor::executeShow(const ShowCommand& c) -> void {
             }
             break;
         }
+    }
+}
+
+auto Executor::executeHelp(const HelpCommand& c) -> void {
+    std::map<std::string, std::string> commands = {
+        {"SELECT", "SELECT column1, column2, ... FROM table_name [WHERE condition]\n"
+                  "  - Retrieves data from a table\n"
+                  "  - Use * to select all columns\n"
+                  "  - Example: SELECT * FROM employees WHERE salary > 50000"},
+                  
+        {"CREATE", "CREATE TABLE table_name (column1 TYPE, column2 TYPE, ...)\n"
+                  "  - Creates a new table with specified columns\n"
+                  "  - Supported types: INTEGER, STRING, DOUBLE, BOOLEAN\n"
+                  "  - Example: CREATE TABLE employees (id INTEGER, name STRING, salary DOUBLE)"},
+                  
+        {"INSERT", "INSERT INTO table_name [(column1, column2, ...)] VALUES (value1, value2, ...), ...\n"
+                  "  - Inserts new rows into a table\n"
+                  "  - Can insert multiple rows with comma separation\n"
+                  "  - Example: INSERT INTO employees VALUES (1, 'John Doe', 75000)"},
+                  
+        {"UPDATE", "UPDATE table_name SET column1 = value1, column2 = value2, ... [WHERE condition]\n"
+                  "  - Updates existing rows in a table\n"
+                  "  - Example: UPDATE employees SET salary = 80000 WHERE id = 1"},
+                  
+        {"DELETE", "DELETE FROM table_name [WHERE condition]\n"
+                  "  - Removes rows from a table\n"
+                  "  - Example: DELETE FROM employees WHERE id = 1"},
+                  
+        {"DROP", "DROP TABLE table_name\n"
+                "  - Deletes an entire table\n"
+                "  - Example: DROP TABLE employees"},
+                
+        {"ALTER", "ALTER TABLE table_name ADD column_name TYPE\n"
+                 "ALTER TABLE table_name DROP COLUMN column_name\n"
+                 "ALTER TABLE table_name RENAME COLUMN old_name TO new_name\n"
+                 "  - Modifies the structure of a table\n"
+                 "  - Example: ALTER TABLE employees ADD department STRING"},
+                 
+        {"SHOW", "SHOW TABLES\n"
+               "SHOW COLUMNS FROM table_name\n"
+               "  - Lists tables in the database or columns in a table\n"
+               "  - Example: SHOW COLUMNS FROM employees"},
+               
+        {"SAVE", "SAVE TO 'filename'\n"
+               "  - Saves the database to a file\n"
+               "  - Example: SAVE TO 'my_database.db'"},
+               
+        {"LOAD", "LOAD FROM 'filename'\n"
+               "  - Loads a database from a file\n"
+               "  - Example: LOAD FROM 'my_database.db'"},
+               
+        {"HELP", "HELP [command_name]\n"
+               "  - Displays information about commands\n"
+               "  - Example: HELP CREATE"},
+               
+        {"EXIT", "exit\n"
+               "  - Exits the SQL interface"}
+    };
+
+    if (c.hasSpecificCommand()) {
+        const std::string& command_name = c.getCommandName();
+        auto it = commands.find(command_name);
+        if (it != commands.end()) {
+            fmt::println("Help for {} command:", command_name);
+            fmt::println("{}", it->second);
+        } else {
+            fmt::println("Unknown command: {}", command_name);
+            fmt::println("Type HELP to see all available commands.");
+        }
+    } else {
+        fmt::println("Available commands:");
+        fmt::println("-------------------");
+        for (const auto& [cmd, _] : commands) {
+            fmt::println("{}", cmd);
+        }
+        fmt::println("\nType HELP command_name for detailed information on a specific command.");
     }
 }
 

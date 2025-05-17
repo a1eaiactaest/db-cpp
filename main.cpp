@@ -39,10 +39,11 @@ void executeQuery(Database& db, const std::string& query, bool logToFile = true)
     if (command) {
         fmt::println("successfully parsed query: {}", query);
         Executor executor(db);
-        executor.execute(command);
+        bool success = executor.execute(command);
 
-        if (logToFile && command->getType() != CommandType::SELECT && 
-            command->getType() != CommandType::SHOW) {
+        // only log commands that execute successfully and aren't read-only operations
+        if (success && logToFile && command->getType() != CommandType::SELECT && 
+            command->getType() != CommandType::SHOW && command->getType() != CommandType::HELP) {
             logCommand(query);
         }
     } else {
@@ -86,6 +87,8 @@ int main() {
     fmt::println("\tCREATE TABLE employees (id INTEGER, name STRING, salary DOUBLE)");
     fmt::println("\tINSERT INTO employees VALUES (1, 'John Doe', 75000)");
     fmt::println("\tSELECT * FROM employees");
+    fmt::println("\tHELP - Show available commands");
+    fmt::println("\tHELP SELECT - Show help for a specific command");
     fmt::println("\texit");
 
     std::string input;

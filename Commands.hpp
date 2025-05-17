@@ -247,13 +247,32 @@ private:
 public:
     explicit ShowCommand(ShowType show_type = ShowType::TABLES) : Command(CommandType::SHOW), show_type_(show_type) {}
 
-    ShowCommand(std::string table_name) 
-        : Command(CommandType::SHOW),
+    ShowCommand(std::string table_name) : Command(CommandType::SHOW),
           show_type_(ShowType::COLUMNS),
           table_name_(std::move(table_name)) {}
 
     ShowType getShowType() const;
     const std::string& getTableName() const;
+    std::string toString() const override;
+};
+
+/*
+    *
+    *
+    *  ===== Help Command =====
+    *
+    *
+*/
+class HelpCommand : public Command {
+private:
+    std::string command_name_; // optional specific command to get help for
+
+public:
+    explicit HelpCommand() : Command(CommandType::HELP), command_name_() {}
+    explicit HelpCommand(std::string command_name) : Command(CommandType::HELP), command_name_(std::move(command_name)) {}
+
+    const std::string& getCommandName() const { return command_name_; }
+    bool hasSpecificCommand() const { return !command_name_.empty(); }
 
     std::string toString() const override;
 };

@@ -486,6 +486,13 @@ auto Parser::handleDelete() -> void {
 
 auto Parser::handleDrop() -> void {
     state_.current_command = CommandType::DROP;
+    auto tok = findNextToken();
+    if (tok == "TABLE") {
+        state_.current_table_name = findNextToken();
+    } else {
+        // If "TABLE" keyword is omitted, use the token as table name
+        state_.current_table_name = tok;
+    }
 }
 
 auto Parser::handleShow() -> void {
@@ -525,6 +532,17 @@ auto Parser::handleLoad() -> void {
     }
     
     state_.filename = filename;
+}
+
+auto Parser::handleHelp() -> void {
+    state_.current_command = CommandType::HELP;
+    // check for specific command to get help for
+    skipWhitespace();
+    if (pos_ < query_.length() && query_[pos_] != ';') {
+        state_.help_command = findNextToken();
+        std::transform(state_.help_command.begin(), state_.help_command.end(), 
+                      state_.help_command.begin(), ::toupper);
+    }
 }
 
 auto Parser::resetState() -> void {
@@ -580,6 +598,8 @@ auto Parser::buildCommand() -> std::unique_ptr<Command> {
             } else {
                 return std::make_unique<ShowCommand>(state_.current_table_name);
             }
+        case CommandType::HELP:
+            return std::make_unique<HelpCommand>(state_.help_command);
         default:
             return nullptr;
     }

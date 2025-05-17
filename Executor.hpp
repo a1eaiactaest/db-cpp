@@ -20,9 +20,10 @@ private:
     void executeSave(const SaveCommand& command);
     void executeLoad(const LoadCommand& command);
     void executeShow(const ShowCommand& command);
+    void executeHelp(const HelpCommand& command);
 
 public:
     explicit Executor(Database& database) : database_(database) {}
 
-    void execute(const std::unique_ptr<Command>& command);
+    bool execute(const std::unique_ptr<Command>& command);
 };
