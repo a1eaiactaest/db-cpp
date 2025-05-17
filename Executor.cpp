@@ -79,14 +79,11 @@ auto Executor::executeSelect(const SelectCommand& c) -> void {
     // Parse WHERE clause if present
     std::string column_name, operator_str, value_str;
     if (!where_clause.empty()) {
-        fmt::print("Parsing WHERE clause: {}\n", where_clause);
         std::istringstream iss(where_clause);
         iss >> column_name >> operator_str >> value_str;
         if (column_name.empty() || operator_str.empty() || value_str.empty()) {
             throw std::runtime_error("invalid WHERE clause format");
         }
-        fmt::print("Parsed WHERE clause: column={}, operator={}, value={}\n", 
-            column_name, operator_str, value_str);
     }
 
     // Print data rows
@@ -94,25 +91,26 @@ auto Executor::executeSelect(const SelectCommand& c) -> void {
         // Apply WHERE clause filtering
         if (!where_clause.empty()) {
             if (!row.hasColumn(column_name)) {
-                fmt::print("Row does not have column: {}\n", column_name);
-                continue;
+                continue; // Skip rows that don't have the column we're filtering on
             }
 
             const auto& value = row.getValue(column_name);
             Value compare_value;
             
             // Parse the comparison value
-            if (value_str.front() == '\'' || value_str.front() == '"') {
-                compare_value = Value(value_str.substr(1, value_str.length()-2));
-            } else if (value_str == "true" || value_str == "false") {
-                compare_value = Value(value_str == "true");
-            } else if (value_str.find('.') != std::string::npos) {
-                compare_value = Value(std::stod(value_str));
-            } else {
-                compare_value = Value(std::stoi(value_str));
+            try {
+                if (value_str.front() == '\'' || value_str.front() == '"') {
+                    compare_value = Value(value_str.substr(1, value_str.length()-2));
+                } else if (value_str == "true" || value_str == "false") {
+                    compare_value = Value(value_str == "true");
+                } else if (value_str.find('.') != std::string::npos) {
+                    compare_value = Value(std::stod(value_str));
+                } else {
+                    compare_value = Value(std::stoi(value_str));
+                }
+            } catch (const std::exception& e) {
+                throw std::runtime_error(fmt::format("error parsing value in WHERE clause: {}", e.what()));
             }
-
-            fmt::print("Comparing: {} {} {}\n", value.toString(), operator_str, compare_value.toString());
 
             // Apply the comparison
             bool matches = false;
@@ -124,7 +122,6 @@ auto Executor::executeSelect(const SelectCommand& c) -> void {
             else if (operator_str == ">=") matches = value >= compare_value;
             else throw std::runtime_error(fmt::format("unsupported operator in WHERE clause: {}", operator_str));
 
-            fmt::print("Match result: {}\n", matches);
             if (!matches) continue;
         }
 

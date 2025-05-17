@@ -42,6 +42,8 @@ auto Parser::skipWhitespace() -> void {
 }
 
 static constexpr std::string delimiters = ",();";
+static constexpr std::string operators = "=<>!";
+
 auto Parser::findNextToken() -> std::string {
     skipWhitespace();
 
@@ -51,19 +53,37 @@ auto Parser::findNextToken() -> std::string {
 
     std::string token;
     bool in_quotes = false;
+
+    // Special case for operators
+    char c = query_[pos_];
+    if (c == '=' || c == '<' || c == '>' || c == '!') {
+        token += c;
+        pos_++;
+
+        if (pos_ < query_.length() && query_[pos_] == '=') {
+            token += '=';
+            pos_++;
+        }
+        return token;
+    }
+    
+    // Normal token parsing
     while (pos_ < query_.length()) {
-        char c = query_[pos_];
+        c = query_[pos_];
 
         if (c == '\'' || c == '"') {
             in_quotes = !in_quotes; // flip
             token += c;
-        } else if (!in_quotes && (std::isspace(c) || delimiters.find(c) != std::string::npos)) { // maybe a cast on char?
+        } else if (!in_quotes && (std::isspace(c) || delimiters.find(c) != std::string::npos)) {
             if (!token.empty()) return token;
             if (c != ' ' && c != '\t' && c != '\n') {
                 token = c;
                 pos_++;
                 return token;
             }
+        } else if (!in_quotes && (c == '=' || c == '<' || c == '>' || c == '!') && !token.empty()) {
+            // If we encounter an operator and we already have a token, return the token first
+            return token;
         } else {
             token += c;
         }
@@ -125,7 +145,6 @@ auto Parser::handleFrom() -> void {
         if (!state_.current_tables_names.empty() && 
             state_.current_columns_names.size() == 1 && 
             state_.current_columns_names[0] == "*") {
-            
             fmt::print("Looking up table: {}\n", state_.current_table_name);
             auto table = database_.getTable(state_.current_table_name);
             if (table) {
@@ -144,8 +163,26 @@ auto Parser::handleFrom() -> void {
 
 auto Parser::handleWhere() -> void {
     std::string column_name = findNextToken();
+    if (column_name.empty()) {
+        throw std::runtime_error("missing column name in WHERE clause");
+    }
+
     std::string operator_str = findNextToken();
+    if (operator_str.empty()) {
+        throw std::runtime_error("missing operator in WHERE clause");
+    }
+
     std::string value_str = findNextToken();
+    if (value_str.empty()) {
+        throw std::runtime_error("missing value in WHERE clause");
+    }
+
+    // Validate operator
+    if (operator_str != "=" && operator_str != "!=" && 
+        operator_str != "<" && operator_str != ">" && 
+        operator_str != "<=" && operator_str != ">=") {
+        throw std::runtime_error(fmt::format("unsupported operator in WHERE clause: {}", operator_str));
+    }
 
     state_.where_clause = fmt::format("{} {} {}", column_name, operator_str, value_str);
 }
@@ -194,43 +231,36 @@ auto Parser::handleTable() -> void {
                 throw std::runtime_error(fmt::format("unsupported data type: {}", type_name));
             }
 
-            // Create column and add it to the list
             Column col(col_name, type);
-            
-            // Check for any constraints for this column
             bool done = false;
             while (!done) {
                 auto constraint_tok = findNextToken();
-                
                 if (constraint_tok.empty()) {
                     done = true;
                 } else if (constraint_tok == ",") {
-                    // End of this column definition
                     done = true;
                 } else if (constraint_tok == ")") {
-                    // End of all column definitions
-                    pos_--; // Push back the token so it's read again in the outer loop
+                    // end of all column definitions
+                    pos_--; // push back the token so it's read again in the outer loop
                     done = true;
                 } else {
-                    // Parse constraint
+                    // parse constraint
                     std::string upper_constraint = constraint_tok;
                     std::transform(upper_constraint.begin(), upper_constraint.end(), 
                                   upper_constraint.begin(), ::toupper);
-                    
+
                     if (upper_constraint == "NOT" || upper_constraint == "NOT NULL") {
-                        // Handle NOT NULL constraint
+                        // handle NOT NULL constraint
                         if (upper_constraint == "NOT") {
-                            // Look for NULL keyword
+                            // look for NULL keyword
                             auto null_tok = findNextToken();
                             std::string upper_null = null_tok;
                             std::transform(upper_null.begin(), upper_null.end(), 
                                           upper_null.begin(), ::toupper);
-                            
                             if (upper_null != "NULL") {
                                 throw std::runtime_error("expected NULL after NOT");
                             }
                         }
-                        
                         auto constraint = std::make_shared<NotNullConstraint>(
                             ConstraintType::NOT_NULL, 
                             col_name + "_not_null", 
@@ -238,36 +268,35 @@ auto Parser::handleTable() -> void {
                         col.addConstraint(constraint);
                         state_.current_constraints.push_back(constraint);
                     } else if (upper_constraint == "UNIQUE") {
-                        // Handle UNIQUE constraint
+                        // handle UNIQUE constraint
                         auto constraint = std::make_shared<UniqueConstraint>(
                             col_name + "_unique", 
                             std::vector<std::string>{col_name});
                         col.addConstraint(constraint);
                         state_.current_constraints.push_back(constraint);
                     } else if (upper_constraint == "PRIMARY" || upper_constraint == "PRIMARY KEY" || upper_constraint == "PK") {
-                        // Handle PRIMARY KEY constraint
+                        // handle PRIMARY KEY constraint
                         if (upper_constraint == "PRIMARY") {
-                            // Look for KEY keyword
+                            // look for KEY keyword
                             auto key_tok = findNextToken();
                             std::string upper_key = key_tok;
                             std::transform(upper_key.begin(), upper_key.end(), 
                                          upper_key.begin(), ::toupper);
-                            
+
                             if (upper_key != "KEY") {
                                 throw std::runtime_error("expected KEY after PRIMARY");
                             }
                         }
-                        
+
                         auto constraint = std::make_shared<PrimaryKeyConstraint>(
                             col_name + "_pk", 
                             std::vector<std::string>{col_name});
                         col.addConstraint(constraint);
                         state_.current_constraints.push_back(constraint);
                     } else if (upper_constraint == "DEFAULT") {
-                        // Handle DEFAULT value constraint
+                        // handle DEFAULT value constraint
                         auto value_tok = findNextToken();
                         Value default_value;
-                        
                         if (isString(value_tok)) {
                             default_value = Value(value_tok.substr(1, value_tok.length() - 2));
                         } else if (isBool(value_tok)) {
@@ -275,10 +304,9 @@ auto Parser::handleTable() -> void {
                         } else if (isDouble(value_tok)) {
                             default_value = Value(std::stod(value_tok));
                         } else {
-                            // Assume integer
+                            // assume integer
                             default_value = Value(std::stoi(value_tok));
                         }
-                        
                         auto constraint = std::make_shared<DefaultConstraint>(
                             col_name + "_default", 
                             col_name, 
@@ -290,12 +318,11 @@ auto Parser::handleTable() -> void {
                     }
                 }
             }
-            
             state_.current_columns_def.push_back(col);
 
-            // If we ended on a ')', we're done with column definitions
+            // if we ended on a ')', were doooone heeer
             if (pos_ < query_.length() && query_[pos_] == ')') {
-                findNextToken(); // Consume the ')'
+                findNextToken(); // eat the ')' and break
                 break;
             }
         }
