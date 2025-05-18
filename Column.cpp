@@ -4,8 +4,8 @@
 
 #include <algorithm>
 
-#include "Column.h"
-#include "Constraint.h"
+#include "Column.hpp"
+#include "Constraint.hpp"
 
 auto Column::addConstraint(const std::shared_ptr<Constraint>& constraint) -> void {
     constraints.push_back(constraint);

@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "CommonTypes.h"
+#include "CommonTypes.hpp"
 
 class Database {
 private: 

@@ -1,9 +1,9 @@
-#include "Constraint.h"
+#include "Constraint.hpp"
 #include "fmt/format.h"
 
-#include "Database.h"
-#include "CommonTypes.h"
-#include "Table.h"
+#include "Database.hpp"
+#include "CommonTypes.hpp"
+#include "Table.hpp"
 #include <memory>
 
 auto Database::addTable(TablePtr table) -> void {

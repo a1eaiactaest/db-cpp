@@ -5,9 +5,9 @@
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 
-#include "Table.h"
-#include "Constraint.h"
-#include "Database.h"
+#include "Table.hpp"
+#include "Constraint.hpp"
+#include "Database.hpp"
 
 auto Constraint::getType() const -> ConstraintType {
     return type;

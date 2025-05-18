@@ -4,8 +4,8 @@
 #include <fmt/core.h>
 #include <stdexcept>
 
-#include "data_types.h"
-#include "CommonTypes.h"
+#include "data_types.hpp"
+#include "CommonTypes.hpp"
 #include "Commands.hpp"
 
 auto CreateCommand::getTableName() const -> const std::string& {

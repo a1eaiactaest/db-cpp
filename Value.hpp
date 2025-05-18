@@ -4,7 +4,7 @@
 #ifndef VALUE_H
 #define VALUE_H
 
-#include "data_types.h"
+#include "data_types.hpp"
 
 class Value {
 private:

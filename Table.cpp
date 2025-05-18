@@ -8,10 +8,10 @@
 #include <fmt/format.h>
 
 
-#include "Constraint.h"
-#include "Row.h"
-#include "Table.h"
-#include "Column.h"
+#include "Constraint.hpp"
+#include "Row.hpp"
+#include "Table.hpp"
+#include "Column.hpp"
 
 Table::Table(std::string name) : name_(std::move(name)) {
     if (name_.empty()) {

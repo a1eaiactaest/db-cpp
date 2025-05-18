@@ -4,11 +4,11 @@
 #include <signal.h>
 #include <fstream>
 
-#include "Row.h"
-#include "Value.h"
+#include "Row.hpp"
+#include "Value.hpp"
 #include "Parser.hpp"
 #include "Executor.hpp"
-#include "Database.h"
+#include "Database.hpp"
 
 const std::string COMMAND_LOG_FILE = "db_commands.log";
 Database* globalDb = nullptr;

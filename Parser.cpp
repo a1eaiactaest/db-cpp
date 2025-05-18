@@ -1,7 +1,7 @@
 #include "Parser.hpp"
 #include "Commands.hpp"
-#include "Value.h"
-#include "Table.h"
+#include "Value.hpp"
+#include "Table.hpp"
 #include <fmt/core.h>
 
 static auto isString(const std::string& value) -> bool {

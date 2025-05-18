@@ -1,5 +1,5 @@
 #include "Command.hpp"
-#include "CommonTypes.h"
+#include "CommonTypes.hpp"
 
 auto Command::getType() const -> CommandType {
     return type_;

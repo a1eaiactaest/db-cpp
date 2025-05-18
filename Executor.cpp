@@ -7,9 +7,9 @@
 #include <sstream>
 
 #include "Executor.hpp"
-#include "Table.h"
+#include "Table.hpp"
 #include "Parser.hpp"
-#include "data_types.h"
+#include "data_types.hpp"
 
 bool Executor::evaluateWhereCondition(const Row& row, const std::string& where_clause) {
     if (where_clause.empty()) {

@@ -10,10 +10,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Row.h"
-#include "Column.h"
-#include "Constraint.h"
-#include "CommonTypes.h"
+#include "Row.hpp"
+#include "Column.hpp"
+#include "Constraint.hpp"
+#include "CommonTypes.hpp"
 
 class Table {
 private:

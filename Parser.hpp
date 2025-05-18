@@ -2,11 +2,11 @@
 
 #include <unordered_map>
 
-#include "Column.h"
+#include "Column.hpp"
 #include "Command.hpp"
-#include "CommonTypes.h"
-#include "Value.h"
-#include "Database.h"
+#include "CommonTypes.hpp"
+#include "Value.hpp"
+#include "Database.hpp"
 
 class Parser {
 private:

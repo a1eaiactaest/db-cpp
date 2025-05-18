@@ -5,7 +5,7 @@
 #include <fstream>
 #include "Command.hpp"
 #include "Commands.hpp"
-#include "Database.h"
+#include "Database.hpp"
 #include "Parser.hpp"
 
 class Executor {

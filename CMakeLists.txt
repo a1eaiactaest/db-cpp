@@ -15,19 +15,19 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(fmt)
 
 add_executable(db_cpp main.cpp
-        data_types.h
+        data_types.hpp
         Value.cpp
-        Value.h
+        Value.hpp
         Column.cpp
-        Column.h
+        Column.hpp
         Constraint.cpp
-        Constraint.h
+        Constraint.hpp
         Table.cpp
-        Table.h
+        Table.hpp
         Row.cpp
-        Row.h
-        CommonTypes.h
-        Database.h
+        Row.hpp
+        CommonTypes.hpp
+        Database.hpp
         Database.cpp
         Command.cpp
         Command.hpp

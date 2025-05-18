@@ -6,8 +6,8 @@
 #define COLUMN_H
 #include <utility>
 
-#include "data_types.h"
-#include "Constraint.h"
+#include "data_types.hpp"
+#include "Constraint.hpp"
 
 class Column {
 private:

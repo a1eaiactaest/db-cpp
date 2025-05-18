@@ -8,8 +8,8 @@
 #include <unordered_map>
 #include <string>
 
-#include "Value.h"
-#include "CommonTypes.h"
+#include "Value.hpp"
+#include "CommonTypes.hpp"
 
 class Row {
 private:

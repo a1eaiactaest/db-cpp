@@ -5,9 +5,9 @@
 #ifndef CONSTRAINT_H
 #define CONSTRAINT_H
 
-#include "data_types.h"
-#include "Value.h"
-#include "Row.h"
+#include "data_types.hpp"
+#include "Value.hpp"
+#include "Row.hpp"
 
 class Database; // forward declaration, remvoe later
 

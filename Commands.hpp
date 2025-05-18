@@ -4,9 +4,9 @@
 #include <string>
 
 #include "Command.hpp"
-#include "CommonTypes.h"
-#include "Column.h"
-#include "Value.h"
+#include "CommonTypes.hpp"
+#include "Column.hpp"
+#include "Value.hpp"
 
 /*
     *

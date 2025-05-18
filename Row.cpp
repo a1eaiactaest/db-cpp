@@ -2,8 +2,8 @@
 // Created by Piotrek Rybiec on 05/05/2025.
 //
 
-#include "Row.h"
-#include "Column.h"
+#include "Row.hpp"
+#include "Column.hpp"
 
 auto Row::getValue(const std::string& column_name) const -> const Value& {
     return values.at(column_name);
