@@ -35,7 +35,6 @@ void executeQuery(Database& db, const std::string& query, bool logToFile = true)
     auto command = parser.parse(query);
 
     if (command) {
-        fmt::println("successfully parsed query: {}", query);
         Executor executor(db);
         bool success = executor.execute(command);
 
